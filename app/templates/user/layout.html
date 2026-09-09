@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartBot{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --blue:      #0ea5e9;
+            --blue-dark: #0284c7;
+            --blue-light:#38bdf8;
+            --blue-glow: rgba(14,165,233,0.25);
+            --gold:      #f59e0b;
+            --gold-light:#fcd34d;
+            --white:     #ffffff;
+            --bg:        #f0f7ff;
+            --bg2:       #ffffff;
+            --sidebar-bg:#ffffff;
+            --card:      #ffffff;
+            --border:    #e0f0ff;
+            --text:      #0f172a;
+            --text2:     #475569;
+            --muted:     #94a3b8;
+            --success:   #10b981;
+            --danger:    #ef4444;
+            --warning:   #f59e0b;
+            --radius:    14px;
+            --sidebar:   260px;
+            --shadow:    0 4px 20px rgba(14,165,233,0.08);
+            --shadow-lg: 0 10px 40px rgba(14,165,233,0.15);
+        }
+
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ── Sidebar ─────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar);
+            background: var(--sidebar-bg);
+            border-left: 1px solid var(--border);
+            height: 100vh;
+            position: fixed;
+            right: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: 4px 0 20px rgba(14,165,233,0.06);
+        }
+
+        .sidebar-brand {
+            padding: 20px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px var(--blue-glow);
+            background: var(--blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .brand-text { font-size: 18px; font-weight: 800; color: var(--blue); font-family: 'Sora', sans-serif; }
+        .brand-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+        .nav { padding: 18px 12px; flex: 1; overflow-y: auto; }
+
+        .nav-group-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 0 10px;
+            margin: 14px 0 6px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 12px;
+            border-radius: 10px;
+            color: var(--text2);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-bottom: 2px;
+        }
+
+        .nav-link:hover {
+            background: var(--bg);
+            color: var(--blue);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            color: var(--blue-dark);
+            font-weight: 700;
+            border: 1px solid #bae6fd;
+        }
+
+        .nav-link .icon { font-size: 18px; flex-shrink: 0; }
+
+        /* Sub status card */
+        .sub-status-card {
+            margin: 12px;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .sub-status-card.trial {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            border: 1px solid #7dd3fc;
+            color: var(--blue-dark);
+        }
+
+        .sub-status-card.active {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+        }
+
+        .sub-status-card.expired {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+        }
+
+        .sub-status-title { font-weight: 700; margin-bottom: 4px; font-size: 13px; }
+        .sub-status-days { opacity: 0.8; }
+
+        /* User profile at bottom */
+        .sidebar-bottom {
+            padding: 14px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--blue), var(--blue-light));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            color: white;
+            font-weight: 700;
+        }
+
+        .user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-email { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .btn-logout-small {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 9px;
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            border-radius: 10px;
+            color: #dc2626;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-logout-small:hover { background: #fecaca; }
+
+        /* ── Main Content ─────────────────────────── */
+        .main {
+            margin-right: var(--sidebar);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 64px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 12px rgba(14,165,233,0.05);
+        }
+
+        .topbar-title {
+            font-size: 18px;
+            font-weight: 800;
+            flex: 1;
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+        }
+
+        .topbar-sub { font-size: 11px; color: var(--muted); }
+
+        .page { padding: 28px; flex: 1; }
+
+        /* ── Cards ────────────────────────────────── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* ── Tables ───────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th {
+            padding: 14px 18px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            background: rgba(14, 165, 233, 0.03);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 18px;
+            font-size: 13.5px;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(14, 165, 233, 0.03);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat {
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            border-radius: var(--radius);
+        }
+
+        .stat:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon { font-size: 28px; margin-bottom: 12px; }
+        .stat-val { font-size: 30px; font-weight: 800; margin-bottom: 4px; font-family: 'Sora', sans-serif; color: var(--blue-dark); }
+        .stat-lbl { font-size: 13px; color: var(--text2); }
+
+        /* ── Buttons ──────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+            color: #fff;
+            box-shadow: 0 4px 12px var(--blue-glow);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px var(--blue-glow); }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+        }
+        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(245,158,11,0.3); }
+
+        .btn-ghost {
+            background: var(--bg);
+            color: var(--text2);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: #e0f2fe; color: var(--blue); border-color: var(--blue-light); }
+
+        .btn-danger { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+        .btn-danger:hover { background: #fecaca; }
+
+        .btn-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .btn-success:hover { background: #a7f3d0; }
+
+        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+
+        /* ── Badges ───────────────────────────────── */
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-trial { background: #dbeafe; color: #1d4ed8; }
+        .badge-inactive { background: #fee2e2; color: #dc2626; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-expired { background: #f1f5f9; color: var(--muted); }
+
+        /* ── Forms ────────────────────────────────── */
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 7px; }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-input:focus { border-color: var(--blue); background: #f0f9ff; box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
+        .form-input::placeholder { color: var(--muted); }
+        textarea.form-input { resize: vertical; min-height: 96px; }
+
+        /* ── Modal ────────────────────────────────── */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(6px); z-index: 999; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 20px 60px rgba(14,165,233,0.15); }
+        .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; font-family: 'Sora', sans-serif; color: var(--blue-dark); }
+        .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+        .modal-close { position: absolute; top: 16px; left: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px 12px; color: var(--text2); cursor: pointer; font-size: 16px; transition: all 0.2s; }
+        .modal-close:hover { background: #fee2e2; color: #dc2626; }
+
+        /* ── Toast ────────────────────────────────── */
+        #toasts { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 14px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 30px rgba(14,165,233,0.15);
+            animation: toastIn 0.3s ease;
+            min-width: 260px;
+            border: 1px solid var(--border);
+        }
+        .toast.ok { border-color: #6ee7b7; }
+        .toast.err { border-color: #fca5a5; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Responsive ───────────────────────────── */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main { margin-right: 0; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+    {% block extra_styles %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">
+                <img src="/static/logo.jpg" alt="SmartBot" onerror="this.parentElement.innerHTML='🤖'">
+            </div>
+            <div>
+                <div class="brand-text">SmartBot</div>
+                <div class="brand-sub">لوحة التحكم</div>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="nav-group-label">الرئيسية</div>
+            <a href="/dashboard" class="nav-link {% if page == 'dashboard' %}active{% endif %}">
+                <span class="icon">🏠</span> لوحة التحكم
+            </a>
+
+            <div class="nav-group-label">البوتات</div>
+            <a href="/bots" class="nav-link {% if page == 'bots' %}active{% endif %}">
+                <span class="icon">🤖</span> بوتاتي
+            </a>
+
+            <div class="nav-group-label">الحساب</div>
+            <a href="/subscription" class="nav-link {% if page == 'subscription' %}active{% endif %}">
+                <span class="icon">🎫</span> اشتراكي
+            </a>
+        </nav>
+
+        {% if sub_info is defined %}
+        <div class="sub-status-card {{ sub_info.status }}">
+            <div class="sub-status-title">
+                {% if sub_info.status == 'trial' %}🔮 تجربة مجانية
+                {% elif sub_info.status == 'active' %}✅ اشتراك نشط
+                {% else %}❌ منتهي الصلاحية{% endif %}
+            </div>
+            <div class="sub-status-days">
+                {% if sub_info.days_left > 0 %}متبقي {{ sub_info.days_left }} يوم{% else %}قم بالتجديد{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ (user.full_name[:1] if user and user.full_name else '👤') }}
+                </div>
+                <div style="overflow:hidden;">
+                    <div class="user-name">{{ user.full_name if user else 'المستخدم' }}</div>
+                    <div class="user-email">{{ user.email if user else '' }}</div>
+                </div>
+            </div>
+            <a href="/logout" class="btn-logout-small">🚪 تسجيل الخروج</a>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+        <div class="topbar">
+            <div style="flex:1;">
+                <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+                <div class="topbar-sub">{% block page_sub %}SmartBot{% endblock %}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                {% block topbar_actions %}{% endblock %}
+            </div>
+        </div>
+
+        <div class="page">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <div id="toasts"></div>
+
+    <script>
+        function showToast(msg, type = 'ok') {
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.innerHTML = `${type === 'ok' ? '✅' : '❌'} ${msg}`;
+            document.getElementById('toasts').appendChild(el);
+            setTimeout(() => el.remove(), 4500);
+        }
+
+        async function api(url, method = 'POST', body = null) {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            try {
+                const res = await fetch(url, opts);
+                return await res.json();
+            } catch(e) {
+                return { error: 'خطأ في الاتصال' };
+            }
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

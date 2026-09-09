@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBot - تسجيل الدخول</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #06060d;
+            min-height: 100vh;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated side */
+        .side-visual {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            overflow: hidden;
+        }
+
+        .side-visual::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 60% 60% at 30% 40%, rgba(99,102,241,0.3) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 70% 70%, rgba(168,85,247,0.2) 0%, transparent 60%);
+        }
+
+        .visual-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .visual-emoji {
+            font-size: 80px;
+            margin-bottom: 24px;
+            display: block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .visual-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .visual-desc {
+            font-size: 16px;
+            color: rgba(255,255,255,0.6);
+            max-width: 340px;
+            line-height: 1.7;
+        }
+
+        .features {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            text-align: right;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+
+        /* Form side */
+        .form-side {
+            width: 480px;
+            background: #09090f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 40px;
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .form-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 12px;
+            box-shadow: 0 12px 30px rgba(99,102,241,0.4);
+        }
+
+        .form-logo h1 { font-size: 24px; font-weight: 800; color: #fff; }
+        .form-logo p { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+        .form-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .form-subtitle { font-size: 14px; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
+
+        .form-group { margin-bottom: 18px; width: 100%; }
+
+        .form-label {
+            display: block;
+            color: rgba(255,255,255,0.65);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 7px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 13px 15px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14px;
+            transition: all 0.25s;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.06);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+
+        .form-input::placeholder { color: rgba(255,255,255,0.2); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 6px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(99,102,241,0.4);
+        }
+
+        .error-box {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #fca5a5;
+            font-size: 13px;
+            margin-bottom: 18px;
+            width: 100%;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .form-footer a {
+            color: #a5b4fc;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-footer a:hover { color: #fff; }
+
+        @media (max-width: 900px) {
+            .side-visual { display: none; }
+            .form-side { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Visual Side -->
+    <div class="side-visual">
+        <div class="visual-content">
+            <span class="visual-emoji">🤖</span>
+            <div class="visual-title">SmartBot</div>
+            <div class="visual-desc">أنشئ بوتات ذكاء اصطناعي لتيليغرام في دقائق</div>
+            <div class="features">
+                <div class="feature-item">🧠 ذكاء اصطناعي متقدم بـ Gemini</div>
+                <div class="feature-item">✈️ ربط تيليغرام بخطوات بسيطة</div>
+                <div class="feature-item">📊 إحصائيات ومحادثات مفصلة</div>
+                <div class="feature-item">🔮 تجربة مجانية 10 أيام</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Side -->
+    <!-- Form Side -->
+    <div class="form-side">
+        <div style="width:100%;display:flex;justify-content:flex-end;margin-bottom:12px;">
+            {% if lang != 'en' %}
+            <a href="/login?lang=en" style="color:#94a3b8;font-size:12px;text-decoration:none;padding:4px 10px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">🌐 English</a>
+            {% else %}
+            <a href="/login?lang=ar" style="color:#94a3b8;font-size:12px;text-decoration:none;padding:4px 10px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">🌐 العربية</a>
+            {% endif %}
+        </div>
+
+        <div class="form-logo">
+            <div class="logo-icon">🤖</div>
+            <h1>SmartBot</h1>
+            <p>{% if lang != 'en' %}منصة بوتات الذكاء الاصطناعي{% else %}AI Bots Platform{% endif %}</p>
+        </div>
+
+        <div class="form-title">{% if lang != 'en' %}مرحباً بعودتك 👋{% else %}Welcome back 👋{% endif %}</div>
+        <div class="form-subtitle">{% if lang != 'en' %}سجّل دخولك للوصول إلى لوحة التحكم{% else %}Sign in to access your dashboard{% endif %}</div>
+
+        {% if reset_success %}
+        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;padding:12px 14px;color:#6ee7b7;font-size:13px;margin-bottom:18px;width:100%;">
+            ✅ {% if lang != 'en' %}تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول.{% else %}Password reset successfully! You can now log in.{% endif %}
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="error-box">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="POST" style="width:100%;">
+            <input type="hidden" name="lang" value="{{ lang }}">
+
+            <div class="form-group">
+                <label class="form-label">{% if lang != 'en' %}البريد الإلكتروني{% else %}Email Address{% endif %}</label>
+                <input type="email" name="email" class="form-input" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <label class="form-label" style="margin-bottom:0;">{% if lang != 'en' %}كلمة المرور{% else %}Password{% endif %}</label>
+                    <a href="/forgot-password?lang={{ lang }}" style="color:#818cf8;font-size:12px;text-decoration:none;font-weight:600;">
+                        {% if lang != 'en' %}نسيت كلمة المرور؟{% else %}Forgot password?{% endif %}
+                    </a>
+                </div>
+                <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-submit">
+                {% if lang != 'en' %}تسجيل الدخول →{% else %}Sign In →{% endif %}
+            </button>
+        </form>
+
+        <div class="form-footer">
+            {% if lang != 'en' %}
+            ليس لديك حساب؟ <a href="/register?lang={{ lang }}">إنشاء حساب مجاني (تجربة 10 أيام)</a>
+            {% else %}
+            Don't have an account? <a href="/register?lang={{ lang }}">Create free account (10-day trial)</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

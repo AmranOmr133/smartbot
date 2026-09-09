@@ -1,0 +1,513 @@
+{% extends "admin/layout.html" %}
+{% block title %}المدفوعات والمطابقة — SmartBot Admin{% endblock %}
+{% block page_title %}💳 إدارة المدفوعات ومطابقة الإيصالات{% endblock %}
+{% block page_breadcrumb %}SmartBot Admin / المدفوعات{% endblock %}
+
+{% block content %}
+<!-- KPI Stats Row -->
+<div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card blue">
+        <div class="stat-icon">💳</div>
+        <div class="stat-value">{{ payments|length }}</div>
+        <div class="stat-label">إجمالي طلبات الدفع</div>
+        <div class="stat-change neutral">جميع الطلبات المسجلة</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">{{ stats.pending_payments }}</div>
+        <div class="stat-label">طلبات بانتظار المراجعة</div>
+        <div class="stat-change up">تتطلب اتخاذ إجراء</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">{{ stats.approved_payments }}</div>
+        <div class="stat-label">مدفوعات مقبولة</div>
+        <div class="stat-change up">تم تفعيل الاشتراكات</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value">{{ stats.total_revenue | int }} ر.س</div>
+        <div class="stat-label">إجمالي الإيرادات المؤكدة</div>
+        <div class="stat-change up">تحويلات بنكية معتمدة</div>
+    </div>
+</div>
+
+<!-- Main Payments Table Card -->
+<div class="data-card">
+    <div class="data-card-header">
+        <div>
+            <div class="data-card-title">قائمة طلبات الدفع والإيصالات</div>
+            <div class="data-card-subtitle">مراجعة بيانات التحويل ومطابقة صور الإيصالات مع الحسابات البنكية</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+            <input type="text" id="paymentSearch" placeholder="🔍 بحث باسم أو إيميل أو مرجع..." 
+                   style="padding:8px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;width:240px;outline:none;"
+                   oninput="filterPayments(this.value)">
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table id="paymentsTable">
+            <thead>
+                <tr>
+                    <th># الطلب</th>
+                    <th>العميل</th>
+                    <th>المبلغ</th>
+                    <th>طريقة الدفع</th>
+                    <th>رقم المرجع / الحوالة</th>
+                    <th>صورة الإيصال</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الإرسال</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                <tr id="pay-row-{{ p.id }}">
+                    <td style="color:var(--muted);font-weight:700;font-size:13px;">#{{ p.id }}</td>
+                    <td>
+                        <div style="font-weight:700;color:var(--text);font-size:14px;">{{ p.full_name }}</div>
+                        <div style="font-size:11px;color:var(--muted);">{{ p.email }}</div>
+                        {% if p.phone %}
+                        <div style="font-size:11px;color:var(--blue-dark);direction:ltr;text-align:right;">{{ p.phone }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight:800;font-size:16px;color:var(--blue-dark);font-family:'Sora',sans-serif;">{{ p.amount }}</span>
+                        <span style="font-size:11px;color:var(--muted);">ر.س</span>
+                    </td>
+                    <td>
+                        <span style="font-weight:600;background:var(--bg);padding:3px 10px;border-radius:6px;font-size:12.5px;border:1px solid var(--border);">
+                            {{ p.payment_method }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if p.transaction_ref %}
+                        <code style="font-size:12px;background:#f1f5f9;padding:3px 8px;border-radius:6px;font-family:monospace;color:var(--text);font-weight:600;">
+                            {{ p.transaction_ref }}
+                        </code>
+                        {% else %}
+                        <span style="color:var(--muted);font-size:12px;">غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.screenshot_path %}
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <img src="{{ p.screenshot_path }}" onclick="viewReceiptImage('{{ p.screenshot_path }}')" style="width:44px;height:44px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(--border);box-shadow:var(--shadow);transition:transform 0.2s;" onmouseenter="this.style.transform='scale(1.08)'" onmouseleave="this.style.transform='scale(1)'" title="انقر لتكبير الإيصال" alt="إيصال">
+                            <button class="btn btn-ghost btn-sm" onclick="viewReceiptImage('{{ p.screenshot_path }}')" style="padding:4px 8px;font-size:11px;">🔍 تكبير</button>
+                        </div>
+                        {% else %}
+                        <span style="color:var(--muted);font-size:12px;">🚫 بدون صورة</span>
+                        {% endif %}
+                    </td>
+                    <td id="pay-status-{{ p.id }}">
+                        {% if p.status == 'pending' %}
+                        <span class="badge badge-pending">⏳ قيد المراجعة</span>
+                        {% elif p.status == 'approved' %}
+                        <span class="badge badge-approved">✅ مقبول ومفعّل</span>
+                        {% else %}
+                        <span class="badge badge-rejected">❌ مرفوض</span>
+                        {% endif %}
+                        {% if p.admin_notes %}
+                        <div style="font-size:11px;color:var(--text2);margin-top:4px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ p.admin_notes }}">
+                            📝 {{ p.admin_notes }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--muted);white-space:nowrap;">
+                        {{ p.created_at[:16] if p.created_at else '—' }}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            <!-- View Order Details Button -->
+                            <button class="btn btn-primary btn-sm" onclick="openOrderDetailsModal({{ p.id }})">
+                                📋 تفاصيل الطلب
+                            </button>
+
+                            {% if p.status == 'pending' %}
+                            <button class="btn btn-success btn-sm" onclick="quickApprove({{ p.id }})">
+                                ✅ قبول
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="openRejectModal({{ p.id }})">
+                                ❌ رفض
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not payments %}
+                <tr>
+                    <td colspan="9" style="text-align:center;padding:50px;color:var(--muted);">
+                        <div style="font-size:42px;margin-bottom:12px;">💳</div>
+                        <div style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:4px;">لا توجد أي طلبات دفع حتى الآن</div>
+                        <div style="font-size:13px;">عند قيام المستخدمين برفع طلبات التحويل البنكي، ستظهر هنا فورياً.</div>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==================================================== -->
+<!-- PROFESSIONAL ORDER DETAILS MODAL (نافذة تفاصيل الطلب) -->
+<!-- ==================================================== -->
+<div class="modal-overlay" id="orderDetailsModal" onclick="closeOrderDetailsModal()">
+    <div class="modal" style="max-width:820px;max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden;" onclick="event.stopPropagation()">
+        
+        <!-- Header -->
+        <div style="padding:20px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(14,165,233,0.02));">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:46px;height:46px;border-radius:14px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;box-shadow:var(--shadow);">
+                    🧾
+                </div>
+                <div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:20px;font-weight:900;color:var(--text);" id="modalOrderTitle">تفاصيل طلب الدفع #--</span>
+                        <span id="modalOrderStatusBadge" class="badge badge-pending">قيد المراجعة</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="modalOrderDate">تاريخ الطلب: --</div>
+                </div>
+            </div>
+            <button onclick="closeOrderDetailsModal()" class="modal-close" style="position:static;">✕</button>
+        </div>
+
+        <!-- Body Grid -->
+        <div style="padding:26px;overflow-y:auto;flex:1;display:grid;grid-template-columns:1.2fr 1fr;gap:24px;background:#fff;" id="orderDetailsContent">
+            
+            <!-- Left Column: Data cards -->
+            <div style="display:flex;flex-direction:column;gap:18px;">
+                
+                <!-- Customer Information Box -->
+                <div style="background:var(--bg);border-radius:14px;padding:18px;border:1px solid var(--border);">
+                    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                        <span>👤 بيانات العميل</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">الاسم الكامل:</span>
+                            <strong id="modalCustName" style="color:var(--text);">--</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">البريد الإلكتروني:</span>
+                            <span id="modalCustEmail" style="font-weight:600;color:var(--blue);">--</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">رقم الهاتف:</span>
+                            <span id="modalCustPhone" style="direction:ltr;font-weight:600;">--</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">حالة الاشتراك الحالية:</span>
+                            <span id="modalCustSubStatus">--</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">عدد البوتات المسجلة:</span>
+                            <strong id="modalCustBotsCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Details Box -->
+                <div style="background:var(--bg);border-radius:14px;padding:18px;border:1px solid var(--border);">
+                    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                        <span>💳 بيانات التحويل المالي</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:var(--muted);">المبلغ المطلوب:</span>
+                            <span style="font-size:18px;font-weight:900;color:var(--blue-dark);font-family:'Sora',sans-serif;" id="modalAmount">50 ر.س</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">طريقة الدفع:</span>
+                            <strong id="modalPayMethod">--</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:var(--muted);">رقم المرجع / الحوالة:</span>
+                            <code style="background:#fff;padding:3px 8px;border-radius:6px;font-weight:700;border:1px solid var(--border);color:var(--text);" id="modalTxRef">--</code>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">ملاحظات العميل:</span>
+                            <span id="modalCustNotes" style="font-style:italic;color:var(--text2);">لا توجد ملاحظات</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Review Status -->
+                <div style="background:var(--bg);border-radius:14px;padding:18px;border:1px solid var(--border);">
+                    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">
+                        <span>📝 مراجعة الإدارة</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">تاريخ المراجعة:</span>
+                            <span id="modalReviewedAt">لم تتم المراجعة بعد</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:var(--muted);">ملاحظات المشرف:</span>
+                            <span id="modalAdminNotes" style="color:var(--text2);">—</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Receipt Image & Action -->
+            <div style="display:flex;flex-direction:column;gap:18px;">
+                <div style="background:var(--bg);border-radius:14px;padding:18px;border:1px solid var(--border);display:flex;flex-direction:column;height:100%;">
+                    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                        <span>📸 صورة الإيصال المرفقة</span>
+                        <span id="receiptAvailabilityBadge" style="font-size:11px;color:var(--muted);">--</span>
+                    </div>
+
+                    <div id="receiptPreviewWrap" style="flex:1;min-height:220px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
+                        <img id="modalReceiptImage" src="" style="max-width:100%;max-height:320px;object-fit:contain;cursor:pointer;" onclick="zoomModalImage()" alt="إيصال الدفع">
+                        <div id="noReceiptPlaceholder" style="text-align:center;color:var(--muted);display:none;padding:30px;">
+                            <div style="font-size:36px;margin-bottom:8px;">🚫</div>
+                            <div style="font-size:13px;">لم يقم المستخدم برفع صورة إيصال لهذا الطلب</div>
+                        </div>
+                    </div>
+
+                    <div id="receiptActionBtns" style="display:flex;gap:10px;margin-top:12px;">
+                        <button type="button" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;" onclick="zoomModalImage()">
+                            🔍 تكبير ملء الشاشة
+                        </button>
+                        <a id="downloadReceiptBtn" href="#" download class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;text-decoration:none;">
+                            ⬇️ تحميل الإيصال
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div style="padding:18px 26px;border-top:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <button type="button" class="btn btn-ghost" onclick="closeOrderDetailsModal()">إغلاق النافذة</button>
+            
+            <div style="display:flex;gap:10px;" id="modalActionButtons">
+                <!-- Buttons injected dynamically -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Receipt Fullscreen Zoom Modal -->
+<div class="modal-overlay" id="receiptImgZoomModal" onclick="closeReceiptImage()">
+    <div style="max-width:90vw;max-height:90vh;position:relative;" onclick="event.stopPropagation()">
+        <img id="zoomModalImgTag" src="" style="max-width:100%;max-height:85vh;border-radius:14px;box-shadow:0 25px 60px rgba(0,0,0,0.85);" alt="تكبير الإيصال">
+        <button onclick="closeReceiptImage()" style="position:absolute;top:-14px;right:-14px;background:#ef4444;color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-weight:bold;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" id="rejectModal" onclick="closeRejectModal()">
+    <div class="modal" style="max-width:440px;" onclick="event.stopPropagation()">
+        <div class="modal-title" style="color:var(--danger);">❌ رفض طلب الدفع</div>
+        <div class="modal-sub">يُرجى توضيح سبب الرفض لتسجيله في سجل الطلب</div>
+        <input type="hidden" id="rejectPaymentId">
+        <div class="form-group">
+            <label class="form-label">سبب الرفض وملاحظات الإدارة</label>
+            <textarea id="rejectNotes" class="form-input" rows="3" placeholder="مثال: رقم الحوالة غير مطابق، أو لم يتم استلام المبلغ في الحساب..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" class="btn btn-ghost" onclick="closeRejectModal()">إلغاء</button>
+            <button type="button" class="btn btn-danger" onclick="submitReject()">تأكيد الرفض</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentLoadedPayment = null;
+
+function filterPayments(q) {
+    const rows = document.querySelectorAll('#paymentsTable tbody tr');
+    rows.forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    });
+}
+
+function viewReceiptImage(src) {
+    document.getElementById('zoomModalImgTag').src = src;
+    document.getElementById('receiptImgZoomModal').classList.add('show');
+}
+
+function closeReceiptImage() {
+    document.getElementById('receiptImgZoomModal').classList.remove('show');
+}
+
+function zoomModalImage() {
+    if (currentLoadedPayment && currentLoadedPayment.screenshot_path) {
+        viewReceiptImage(currentLoadedPayment.screenshot_path);
+    }
+}
+
+async function openOrderDetailsModal(paymentId) {
+    document.getElementById('orderDetailsModal').classList.add('show');
+    document.getElementById('modalOrderTitle').textContent = `جاري تحميل الطلب #${paymentId}...`;
+
+    try {
+        const res = await fetch(`/admin/payments/${paymentId}/details`);
+        const json = await res.json();
+        if (!json.success || !json.payment) {
+            showToast('تعذر جلب تفاصيل الطلب', 'error');
+            closeOrderDetailsModal();
+            return;
+        }
+
+        const p = json.payment;
+        currentLoadedPayment = p;
+
+        // Populate header
+        document.getElementById('modalOrderTitle').textContent = `طلب دفع رقم #${p.id}`;
+        document.getElementById('modalOrderDate').textContent = `تاريخ الإرسال: ${p.created_at || '—'}`;
+
+        const statusBadge = document.getElementById('modalOrderStatusBadge');
+        if (p.status === 'pending') {
+            statusBadge.className = 'badge badge-pending';
+            statusBadge.textContent = '⏳ قيد المراجعة';
+        } else if (p.status === 'approved') {
+            statusBadge.className = 'badge badge-approved';
+            statusBadge.textContent = '✅ مقبول ومفعّل';
+        } else {
+            statusBadge.className = 'badge badge-rejected';
+            statusBadge.textContent = '❌ مرفوض';
+        }
+
+        // Customer details
+        document.getElementById('modalCustName').textContent = p.full_name || '—';
+        document.getElementById('modalCustEmail').textContent = p.email || '—';
+        document.getElementById('modalCustPhone').textContent = p.phone || 'غير مسجل';
+        document.getElementById('modalCustBotsCount').textContent = `${p.bots_count || 0} بوت`;
+        
+        const subBadge = document.getElementById('modalCustSubStatus');
+        if (p.sub_status === 'active') {
+            subBadge.innerHTML = '<span class="badge badge-active">نشط (سنوي)</span>';
+        } else if (p.sub_status === 'trial') {
+            subBadge.innerHTML = '<span class="badge badge-trial">تجريبي</span>';
+        } else {
+            subBadge.innerHTML = '<span class="badge badge-inactive">منتهي / غير مشترك</span>';
+        }
+
+        // Payment details
+        document.getElementById('modalAmount').textContent = `${p.amount} ر.س`;
+        document.getElementById('modalPayMethod').textContent = p.payment_method || '—';
+        document.getElementById('modalTxRef').textContent = p.transaction_ref || 'بدون مرجع';
+        document.getElementById('modalCustNotes').textContent = p.notes || 'لا توجد ملاحظات من العميل';
+
+        // Review notes
+        document.getElementById('modalReviewedAt').textContent = p.reviewed_at || 'لم تتم المراجعة بعد';
+        document.getElementById('modalAdminNotes').textContent = p.admin_notes || '—';
+
+        // Receipt Image
+        const imgTag = document.getElementById('modalReceiptImage');
+        const noImg = document.getElementById('noReceiptPlaceholder');
+        const actionBtns = document.getElementById('receiptActionBtns');
+        const availBadge = document.getElementById('receiptAvailabilityBadge');
+
+        if (p.screenshot_path) {
+            imgTag.src = p.screenshot_path;
+            imgTag.style.display = 'block';
+            noImg.style.display = 'none';
+            actionBtns.style.display = 'flex';
+            document.getElementById('downloadReceiptBtn').href = p.screenshot_path;
+            availBadge.textContent = '✅ إيصال مرفق';
+            availBadge.style.color = '#10b981';
+        } else {
+            imgTag.style.display = 'none';
+            noImg.style.display = 'block';
+            actionBtns.style.display = 'none';
+            availBadge.textContent = '🚫 لا يوجد إيصال';
+            availBadge.style.color = '#94a3b8';
+        }
+
+        // Action buttons
+        const btnContainer = document.getElementById('modalActionButtons');
+        if (p.status === 'pending') {
+            btnContainer.innerHTML = `
+                <button type="button" class="btn btn-danger" onclick="openRejectFromModal(${p.id})">❌ رفض الطلب</button>
+                <button type="button" class="btn btn-success" onclick="approveFromModal(${p.id})">✅ قبول وتفعيل الاشتراك فوراً</button>
+            `;
+        } else if (p.status === 'approved') {
+            btnContainer.innerHTML = `
+                <span style="font-size:13px;color:#10b981;font-weight:700;display:flex;align-items:center;gap:6px;">
+                    ✅ تمت الموافقة وتفعيل الاشتراك لمدة 365 يوماً
+                </span>
+            `;
+        } else {
+            btnContainer.innerHTML = `
+                <span style="font-size:13px;color:#ef4444;font-weight:700;">
+                    ❌ تم رفض هذا الطلب مسبقاً
+                </span>
+            `;
+        }
+
+    } catch (err) {
+        showToast('حدث خطأ أثناء تحميل بيانات الطلب', 'error');
+        closeOrderDetailsModal();
+    }
+}
+
+function closeOrderDetailsModal() {
+    document.getElementById('orderDetailsModal').classList.remove('show');
+}
+
+async function quickApprove(paymentId) {
+    if (!confirm(`هل أنت متأكد من قبول الدفعة #${paymentId} وتفعيل اشتراك المستخدم لمدة سنة كاملة؟`)) return;
+    try {
+        const res = await apiCall(`/admin/payments/${paymentId}/approve`);
+        if (res.success) {
+            showToast('تم قبول الدفعة وتفعيل الاشتراك بنجاح ✅', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(res.error || 'حدث خطأ', 'error');
+        }
+    } catch (e) {
+        showToast('تعذر الاتصال بالخادم', 'error');
+    }
+}
+
+async function approveFromModal(paymentId) {
+    await quickApprove(paymentId);
+}
+
+function openRejectModal(paymentId) {
+    document.getElementById('rejectPaymentId').value = paymentId;
+    document.getElementById('rejectNotes').value = '';
+    document.getElementById('rejectModal').classList.add('show');
+}
+
+function openRejectFromModal(paymentId) {
+    closeOrderDetailsModal();
+    openRejectModal(paymentId);
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.remove('show');
+}
+
+async function submitReject() {
+    const id = document.getElementById('rejectPaymentId').value;
+    const notes = document.getElementById('rejectNotes').value;
+    const data = new FormData();
+    data.append('admin_notes', notes);
+
+    try {
+        const res = await fetch(`/admin/payments/${id}/reject`, { method: 'POST', body: data });
+        const json = await res.json();
+        if (json.success) {
+            showToast('تم رفض طلب الدفع وتسجيل الملاحظات', 'success');
+            closeRejectModal();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(json.error || 'حدث خطأ', 'error');
+        }
+    } catch (e) {
+        showToast('تعذر الاتصال بالخادم', 'error');
+    }
+}
+</script>
+{% endblock %}

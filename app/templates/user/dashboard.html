@@ -1,0 +1,267 @@
+{% extends "user/layout.html" %}
+{% block title %}لوحة التحكم - SmartBot{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+{% block page_sub %}مرحباً، {{ user.full_name }}{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="stats-row">
+    <div class="card stat">
+        <div class="stat-emoji">🤖</div>
+        <div class="stat-val">{{ bots | length }}</div>
+        <div class="stat-lbl">بوتاتي</div>
+    </div>
+    <div class="card stat">
+        <div class="stat-emoji">💬</div>
+        <div class="stat-val">{{ total_messages }}</div>
+        <div class="stat-lbl">إجمالي الرسائل</div>
+    </div>
+    <div class="card stat">
+        <div class="stat-emoji">
+            {% if sub_info.status == 'active' %}✅
+            {% elif sub_info.status == 'trial' %}🔮
+            {% else %}❌{% endif %}
+        </div>
+        <div class="stat-val">{{ sub_info.days_left }}</div>
+        <div class="stat-lbl">
+            {% if sub_info.status == 'trial' %}أيام التجربة{% else %}أيام متبقية{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Subscription Alert -->
+{% if sub_info.status == 'trial' and sub_info.days_left <= 3 %}
+<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:16px 20px;margin-bottom:22px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:26px;">⚠️</span>
+    <div>
+        <div style="font-weight:700;color:#fcd34d;">تجربتك المجانية تنتهي قريباً!</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:2px;">متبقي {{ sub_info.days_left }} يوم فقط - اشترك الآن بـ 50 ريال سنوياً</div>
+    </div>
+    <a href="/subscription" class="btn btn-primary" style="margin-right:auto;white-space:nowrap;">اشترك الآن</a>
+</div>
+{% elif sub_info.status == 'expired' %}
+<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:16px 20px;margin-bottom:22px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:26px;">🚫</span>
+    <div>
+        <div style="font-weight:700;color:#fca5a5;">اشتراكك منتهي</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:2px;">جدّد اشتراكك للاستمرار في استخدام بوتاتك</div>
+    </div>
+    <a href="/subscription" class="btn btn-primary" style="margin-right:auto;white-space:nowrap;">تجديد الاشتراك</a>
+</div>
+{% endif %}
+
+<!-- Bots Section -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div>
+        <h2 style="font-size:17px;font-weight:700;">بوتاتي ({{ bots | length }})</h2>
+        <p style="font-size:12px;color:var(--muted);margin-top:2px;">بوتات التليغرام الخاصة بك</p>
+    </div>
+    <a href="/bots/new" class="btn btn-primary btn-sm">+ إضافة بوت</a>
+</div>
+
+{% if bots %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+    {% for bot in bots %}
+    <div class="card" style="padding:18px;transition:all 0.3s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+                    {% if bot.platform == 'telegram' %}✈️{% else %}🤖{% endif %}
+                </div>
+                <div>
+                    <div style="font-weight:700;font-size:14px;">{{ bot.name }}</div>
+                    <div style="font-size:11px;color:var(--muted);">{{ bot.platform | capitalize }}</div>
+                </div>
+            </div>
+            {% if bot.is_active %}
+            <span class="badge badge-active">🟢 نشط</span>
+            {% else %}
+            <span class="badge badge-inactive">🔴 متوقف</span>
+            {% endif %}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;min-height:20px;">
+            {{ bot.description or 'لا يوجد وصف' }}
+        </div>
+        <a href="/bots/{{ bot.id }}" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;">إدارة البوت ←</a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="padding:50px;text-align:center;">
+    <div style="font-size:54px;margin-bottom:16px;">🤖</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">لا يوجد بوتات بعد</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:22px;">أضف أول بوت تليغرام وابدأ في تقديم خدمة ذكاء اصطناعي</div>
+    <a href="/bots/new" class="btn btn-primary">🚀 إضافة أول بوت</a>
+</div>
+{% endif %}
+
+<!-- Recent Conversations Section -->
+<div style="margin-top:32px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+        <h2 style="font-size:18px;font-weight:800;color:var(--text);">💬 آخر المحادثات والرسائل</h2>
+        <p style="font-size:12px;color:var(--muted);margin-top:2px;">العملاء الذين تفاعلوا مع بوتاتك في التلجرام مؤخراً</p>
+    </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:30px;">
+    {% if recent_conversations %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th>البوت</th>
+                    <th>آخر رسالة</th>
+                    <th>عدد الرسائل</th>
+                    <th>آخر نشاط</th>
+                    <th>المحادثة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conv in recent_conversations %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">
+                                {{ conv.chat_name[:1] if conv.chat_name else '👤' }}
+                            </div>
+                            <div>
+                                <div style="font-weight:700;color:var(--text);font-size:13.5px;">{{ conv.chat_name or conv.chat_id }}</div>
+                                {% if conv.chat_username %}
+                                <div style="font-size:11px;color:var(--blue);direction:ltr;text-align:right;">@{{ conv.chat_username }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-size:12px;background:rgba(14,165,233,0.08);color:var(--blue-dark);padding:3px 8px;border-radius:6px;font-weight:600;">
+                            🤖 {{ conv.bot_name }}
+                        </span>
+                    </td>
+                    <td style="max-width:260px;">
+                        <div style="font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ conv.last_message }}">
+                            {{ conv.last_message or 'بدأت المحادثة' }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-trial" style="font-size:11px;font-weight:700;">
+                            {{ conv.messages_count }} رسائل
+                        </span>
+                    </td>
+                    <td style="font-size:12px;color:var(--muted);white-space:nowrap;">
+                        {{ conv.last_activity[:16] if conv.last_activity else '—' }}
+                    </td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" onclick="openChatModal({{ conv.id }}, '{{ conv.chat_name | escape }}')">
+                            👁️ عرض المحادثة
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding:48px 20px;text-align:center;color:var(--muted);">
+        <div style="font-size:42px;margin-bottom:12px;">💬</div>
+        <div style="font-weight:700;font-size:16px;color:var(--text);margin-bottom:6px;">لا توجد محادثات مسجلة بعد</div>
+        <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto;">
+            عندما يبدأ عملاؤك بمراسلة البوت في التلجرام، ستظهر جميع المحادثات وتفاصيلها هنا تلقائياً في الوقت الفعلي.
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chat Log Modal -->
+<div class="modal-overlay" id="chatModal" onclick="closeChatModal()">
+    <div class="modal" style="max-width:600px;max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden;" onclick="event.stopPropagation()">
+        <!-- Chat Header -->
+        <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:40px;height:40px;border-radius:12px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">
+                    💬
+                </div>
+                <div>
+                    <div id="modalChatUser" style="font-weight:800;font-size:16px;color:var(--text);">محادثة المستخدم</div>
+                    <div id="modalChatSub" style="font-size:12px;color:var(--muted);">سجل الرسائل الكامل</div>
+                </div>
+            </div>
+            <button onclick="closeChatModal()" class="modal-close" style="position:static;">✕</button>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div id="chatMessagesBody" style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;background:#f8fafc;min-height:300px;max-height:480px;">
+            <div style="text-align:center;color:var(--muted);padding:40px 0;">جاري تحميل الرسائل...</div>
+        </div>
+
+        <!-- Chat Footer -->
+        <div style="padding:14px 20px;border-top:1px solid var(--border);background:#fff;text-align:left;">
+            <button class="btn btn-ghost btn-sm" onclick="closeChatModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function openChatModal(convId, userName) {
+    document.getElementById('modalChatUser').textContent = userName || 'المستخدم';
+    document.getElementById('modalChatSub').textContent = 'محادثة رقم #' + convId;
+    const body = document.getElementById('chatMessagesBody');
+    body.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">⏳ جاري تحميل المحادثة...</div>';
+    document.getElementById('chatModal').classList.add('show');
+
+    try {
+        const res = await fetch(`/conversations/${convId}/messages`);
+        const json = await res.json();
+        if (!json.success || !json.messages || json.messages.length === 0) {
+            body.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">لا توجد رسائل مسجلة لهذه المحادثة بعد.</div>';
+            return;
+        }
+
+        body.innerHTML = '';
+        json.messages.forEach(msg => {
+            const isUser = (msg.role === 'user');
+            const div = document.createElement('div');
+            div.style.maxWidth = '80%';
+            div.style.alignSelf = isUser ? 'flex-start' : 'flex-end';
+            div.style.background = isUser ? '#0ea5e9' : '#ffffff';
+            div.style.color = isUser ? '#ffffff' : '#0f172a';
+            div.style.padding = '10px 14px';
+            div.style.borderRadius = '14px';
+            div.style.boxShadow = isUser ? '0 2px 8px rgba(14,165,233,0.3)' : '0 2px 8px rgba(0,0,0,0.06)';
+            div.style.border = isUser ? 'none' : '1px solid #e2e8f0';
+            div.style.fontSize = '13.5px';
+            div.style.lineHeight = '1.5';
+            div.style.wordBreak = 'break-word';
+
+            const senderLabel = isUser ? '👤 العميل' : '🤖 البوت';
+            const timeStr = msg.created_at ? msg.created_at.substring(11, 16) : '';
+
+            div.innerHTML = `
+                <div style="font-size:10px;opacity:0.8;margin-bottom:3px;font-weight:700;">${senderLabel} • ${timeStr}</div>
+                <div style="white-space:pre-wrap;">${escapeHtml(msg.content)}</div>
+            `;
+            body.appendChild(div);
+        });
+
+        // Scroll to bottom
+        body.scrollTop = body.scrollHeight;
+    } catch (e) {
+        body.innerHTML = '<div style="text-align:center;color:var(--danger);padding:40px 0;">حدث خطأ أثناء تحميل الرسائل.</div>';
+    }
+}
+
+function closeChatModal() {
+    document.getElementById('chatModal').classList.remove('show');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
+

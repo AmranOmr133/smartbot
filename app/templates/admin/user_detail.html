@@ -1,0 +1,367 @@
+{% extends "admin/layout.html" %}
+{% block title %}تفاصيل المستخدم: {{ target_user.full_name }} — SmartBot Admin{% endblock %}
+{% block page_title %}👤 ملف المستخدم: {{ target_user.full_name }}{% endblock %}
+{% block page_breadcrumb %}<a href="/admin/users" style="color:var(--blue);text-decoration:none;">المستخدمون</a> / تفاصيل #{{ target_user.id }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- User Header Card -->
+    <div class="data-card" style="padding:28px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
+            <div style="display:flex;align-items:center;gap:18px;">
+                <div style="width:70px;height:70px;border-radius:20px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;font-weight:700;box-shadow:0 8px 25px var(--blue-glow);">
+                    {{ target_user.full_name[:1] }}
+                </div>
+                <div>
+                    <div style="font-size:24px;font-weight:800;color:var(--text);margin-bottom:6px;">
+                        {{ target_user.full_name }}
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text2);flex-wrap:wrap;">
+                        <span>📧 {{ target_user.email }}</span>
+                        {% if target_user.phone %}
+                        <span>📱 {{ target_user.phone }}</span>
+                        {% endif %}
+                        <span>📅 انضم: {{ target_user.created_at[:10] }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-sm btn-primary" onclick="openEditModal()">✏️ تعديل البيانات</button>
+                <button class="btn btn-sm btn-success" onclick="grantSub()">🎫 منح اشتراك سنة</button>
+                <button class="btn btn-sm btn-ghost" onclick="toggleActive()" id="btn-toggle-active">
+                    {% if target_user.is_active %}🔴 حظر الحساب{% else %}🟢 فك الحظر{% endif %}
+                </button>
+                <button class="btn btn-sm btn-warning" onclick="openSuspendModal()">
+                    {% if target_user.is_suspended %}🟢 إلغاء التعليق{% else %}⚠️ تعليق الحساب{% endif %}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteUser()">🗑️ حذف نهائي</button>
+            </div>
+        </div>
+
+        <!-- Badges & Status row -->
+        <div style="display:flex;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:13px;color:var(--muted);">حالة التفعيل:</span>
+                {% if target_user.is_active %}
+                <span class="badge badge-active" id="badge-active">مفعل</span>
+                {% else %}
+                <span class="badge badge-inactive" id="badge-active">معطل / محظور</span>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:13px;color:var(--muted);">حالة التعليق:</span>
+                {% if target_user.is_suspended %}
+                <span class="badge badge-danger">معلّق مؤقتاً</span>
+                <span style="font-size:12px;color:var(--danger);">السبب: {{ target_user.suspended_reason or 'بدون سبب مسجل' }}</span>
+                {% else %}
+                <span class="badge badge-success">طبيعي</span>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:13px;color:var(--muted);">البريد الإلكتروني:</span>
+                {% if target_user.is_verified %}
+                <span class="badge badge-success">مؤكد ✅</span>
+                {% else %}
+                <span class="badge badge-warning">غير مؤكد</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid: Subscription & Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <!-- Subscription Box -->
+        <div class="data-card" style="padding:24px;">
+            <div class="data-card-title" style="margin-bottom:16px;">💳 تفاصيل الاشتراك</div>
+            {% if subscription %}
+            <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                    <span style="color:var(--muted);">حالة الاشتراك:</span>
+                    {% if subscription.status == 'active' %}
+                    <span class="badge badge-active">نشط (سنوي)</span>
+                    {% elif subscription.status == 'trial' %}
+                    <span class="badge badge-trial">تجريبي</span>
+                    {% else %}
+                    <span class="badge badge-inactive">منتهي الصلاحية</span>
+                    {% endif %}
+                </div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                    <span style="color:var(--muted);">نوع الخطة:</span>
+                    <strong>{{ subscription.plan }}</strong>
+                </div>
+                {% if subscription.subscription_start %}
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                    <span style="color:var(--muted);">تاريخ البدء:</span>
+                    <span>{{ subscription.subscription_start[:10] }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                    <span style="color:var(--muted);">تاريخ الانتهاء:</span>
+                    <span>{{ subscription.subscription_end[:10] }}</span>
+                </div>
+                {% endif %}
+                <div style="display:flex;justify-content:space-between;padding-top:4px;">
+                    <span style="color:var(--muted);">الحد الأقصى للبوتات:</span>
+                    <strong>{{ subscription.max_bots or 1 }} بوت</strong>
+                </div>
+            </div>
+            <div style="margin-top:20px;display:flex;gap:10px;">
+                <button class="btn btn-sm btn-ghost" onclick="resetSub()" style="color:var(--danger);border-color:rgba(239,68,68,0.3);">🛑 إلغاء الاشتراك الحالي</button>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:30px 10px;color:var(--muted);">
+                لا يوجد سجل اشتراك نشط لهذا المستخدم.
+                <div style="margin-top:14px;">
+                    <button class="btn btn-sm btn-success" onclick="grantSub()">🎫 منح اشتراك الآن</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bots Box -->
+        <div class="data-card" style="padding:24px;">
+            <div class="data-card-title" style="margin-bottom:16px;">🤖 بوتات التلجرام ({{ bots|length }})</div>
+            {% if bots %}
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                {% for b in bots %}
+                <div style="padding:14px;background:var(--bg);border-radius:12px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;">
+                            <span>{{ b.name }}</span>
+                            {% if b.is_active %}
+                            <span class="badge badge-active" style="font-size:10px;padding:2px 8px;">نشط</span>
+                            {% else %}
+                            <span class="badge badge-inactive" style="font-size:10px;padding:2px 8px;">متوقف</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+                            المنصة: {{ b.platform|upper }} | المعرف: #{{ b.id }}
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-sm btn-ghost" onclick="toggleBot({{ b.id }})">
+                            {% if b.is_active %}إيقاف{% else %}تشغيل{% endif %}
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:30px 10px;color:var(--muted);">
+                لم يقم المستخدم بربط أي بوت تلجرام حتى الآن.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Payments & Receipts Card -->
+    <div class="data-card">
+        <div class="data-card-header">
+            <div>
+                <div class="data-card-title">💳 سجل المدفوعات والإيصالات ({{ payments|length }})</div>
+                <div class="data-card-subtitle">جميع طلبات الدفع وإيصالات التحويل البنكي للمستخدم</div>
+            </div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المبلغ</th>
+                        <th>طريقة الدفع</th>
+                        <th>رقم المرجع</th>
+                        <th>صورة الإيصال</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                        <th>ملاحظات الإدارة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td style="color:var(--muted);font-size:12px;">#{{ p.id }}</td>
+                        <td style="font-weight:700;color:var(--blue-dark);">{{ p.amount }} ر.س</td>
+                        <td>{{ p.payment_method }}</td>
+                        <td>
+                            <code style="font-size:12px;background:rgba(0,0,0,0.04);padding:3px 8px;border-radius:6px;">{{ p.transaction_ref or '—' }}</code>
+                        </td>
+                        <td>
+                            {% if p.screenshot_path %}
+                            <img src="{{ p.screenshot_path }}" onclick="showReceipt('{{ p.screenshot_path }}')" style="width:48px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid var(--border);" title="انقر لتكبير الإيصال" alt="إيصال">
+                            {% else %}
+                            <span style="color:var(--muted);font-size:12px;">بدون صورة</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.status == 'approved' %}
+                            <span class="badge badge-approved">✅ مقبول</span>
+                            {% elif p.status == 'pending' %}
+                            <span class="badge badge-pending">⏳ قيد المراجعة</span>
+                            {% else %}
+                            <span class="badge badge-rejected">❌ مرفوض</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size:12px;color:var(--muted);">{{ p.created_at[:10] }}</td>
+                        <td style="font-size:12px;color:var(--text2);">{{ p.admin_notes or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align:center;padding:30px;color:var(--muted);">لا توجد أي طلبات دفع مسجلة.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="closeEditModal()">
+    <div style="background:#fff;border-radius:20px;padding:30px;max-width:480px;width:100%;box-shadow:var(--shadow-lg);direction:rtl;" onclick="event.stopPropagation()">
+        <h3 style="font-size:20px;font-weight:800;margin-bottom:18px;color:var(--text);">✏️ تعديل بيانات المستخدم</h3>
+        <form onsubmit="submitEdit(event)" style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+                <label class="form-label" style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;">الاسم الكامل</label>
+                <input type="text" id="edit_full_name" class="form-input" value="{{ target_user.full_name }}" required style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+            </div>
+            <div>
+                <label class="form-label" style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;">البريد الإلكتروني</label>
+                <input type="email" id="edit_email" class="form-input" value="{{ target_user.email }}" required style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+            </div>
+            <div>
+                <label class="form-label" style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;">رقم الهاتف</label>
+                <input type="text" id="edit_phone" class="form-input" value="{{ target_user.phone or '' }}" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+            </div>
+            <div>
+                <label class="form-label" style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;">تعيين كلمة مرور جديدة (اختياري)</label>
+                <input type="password" id="edit_password" class="form-input" placeholder="اتركه فارغاً إن لم ترغب في التغيير" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+                <button type="button" class="btn btn-ghost" onclick="closeEditModal()">إلغاء</button>
+                <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Suspend Modal -->
+<div id="suspendModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="closeSuspendModal()">
+    <div style="background:#fff;border-radius:20px;padding:30px;max-width:440px;width:100%;box-shadow:var(--shadow-lg);direction:rtl;" onclick="event.stopPropagation()">
+        <h3 style="font-size:20px;font-weight:800;margin-bottom:14px;color:var(--text);">⚠️ تعليق حساب المستخدم</h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">
+            سيتم منع المستخدم من الدخول أو تشغيل البوتات مؤقتاً لحين رفع التعليق.
+        </p>
+        <div style="margin-bottom:16px;">
+            <label class="form-label" style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;">سبب التعليق (سيظهر للمستخدم)</label>
+            <textarea id="suspend_reason" class="form-input" rows="3" placeholder="مثال: انتهاك شروط الخدمة أو عدم سداد الفاتورة..." style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">{{ target_user.suspended_reason or '' }}</textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" class="btn btn-ghost" onclick="closeSuspendModal()">إلغاء</button>
+            <button type="button" class="btn btn-warning" onclick="submitSuspend()">تأكيد الإجراء</button>
+        </div>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receiptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;align-items:center;justify-content:center;padding:20px;" onclick="closeReceipt()">
+    <div style="position:relative;max-width:90vw;max-height:90vh;" onclick="event.stopPropagation()">
+        <img id="receiptModalImg" src="" style="max-width:100%;max-height:85vh;border-radius:16px;box-shadow:0 25px 60px rgba(0,0,0,0.6);" alt="معاينة الإيصال">
+        <button onclick="closeReceipt()" style="position:absolute;top:-14px;right:-14px;background:#ef4444;color:#fff;border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;font-weight:bold;font-size:18px;">✕</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const USER_ID = {{ target_user.id }};
+
+function openEditModal() { document.getElementById('editModal').style.display = 'flex'; }
+function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+function openSuspendModal() { document.getElementById('suspendModal').style.display = 'flex'; }
+function closeSuspendModal() { document.getElementById('suspendModal').style.display = 'none'; }
+function showReceipt(src) {
+    document.getElementById('receiptModalImg').src = src;
+    document.getElementById('receiptModal').style.display = 'flex';
+}
+function closeReceipt() { document.getElementById('receiptModal').style.display = 'none'; }
+
+async function submitEdit(e) {
+    e.preventDefault();
+    const data = new FormData();
+    data.append('full_name', document.getElementById('edit_full_name').value);
+    data.append('email', document.getElementById('edit_email').value);
+    data.append('phone', document.getElementById('edit_phone').value);
+    const pwd = document.getElementById('edit_password').value;
+    if (pwd) data.append('new_password', pwd);
+
+    const res = await fetch(`/admin/users/${USER_ID}/edit`, { method: 'POST', body: data });
+    const json = await res.json();
+    if (json.success) {
+        showToast('تم تحديث بيانات المستخدم بنجاح ✅', 'success');
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showToast(json.error || 'حدث خطأ أثناء التحديث', 'error');
+    }
+}
+
+async function toggleActive() {
+    const res = await apiCall(`/admin/users/${USER_ID}/toggle-status`);
+    if (res.success) {
+        showToast('تم تحديث حالة الحظر والتفعيل ✅', 'success');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+async function submitSuspend() {
+    const reason = document.getElementById('suspend_reason').value;
+    const data = new FormData();
+    data.append('reason', reason);
+    const res = await fetch(`/admin/users/${USER_ID}/suspend`, { method: 'POST', body: data });
+    const json = await res.json();
+    if (json.success) {
+        showToast('تم تحديث تعليق الحساب بنجاح ✅', 'success');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+async function grantSub() {
+    if (!confirm('هل أنت متأكد من منح هذا المستخدم اشتراك سنوي كامل لمدة سنة؟')) return;
+    const res = await apiCall(`/admin/users/${USER_ID}/grant-subscription`);
+    if (res.success) {
+        showToast('تم منح الاشتراك السنوي بنجاح ✅', 'success');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+async function resetSub() {
+    if (!confirm('هل أنت متأكد من إنهاء/إيقاف اشتراك هذا المستخدم؟')) return;
+    const res = await apiCall(`/admin/users/${USER_ID}/reset-subscription`);
+    if (res.success) {
+        showToast('تم إيقاف الاشتراك', 'success');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+async function deleteUser() {
+    if (!confirm('⚠️ تحذير شديد: هل أنت متأكد من حذف هذا المستخدم وجميع بوتاته ورسائله نهائياً؟')) return;
+    const res = await apiCall(`/admin/users/${USER_ID}/delete`);
+    if (res.success) {
+        showToast('تم حذف المستخدم نهائياً', 'success');
+        setTimeout(() => window.location.href = '/admin/users', 1200);
+    }
+}
+
+async function toggleBot(botId) {
+    const res = await apiCall(`/admin/bots/${botId}/toggle`);
+    if (res.success) {
+        showToast('تم تغيير حالة البوت بنجاح', 'success');
+        setTimeout(() => location.reload(), 800);
+    }
+}
+</script>
+{% endblock %}

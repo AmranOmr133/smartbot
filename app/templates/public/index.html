@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBot — المنصة الذكية لبناء بوتات التلجرام بالذكاء الاصطناعي</title>
+    <meta name="description" content="اربط بوت التلجرام الخاص بك بأقوى نماذج الذكاء الاصطناعي للرد الفوري على العملاء بأزرار تفاعلية وقواعد معرفية مخصصة.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --primary-light: #38bdf8;
+            --primary-glow: rgba(14, 165, 233, 0.25);
+            --gold: #f59e0b;
+            --gold-light: #fcd34d;
+            --dark: #0f172a;
+            --slate: #475569;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 10px 30px -5px rgba(14, 165, 233, 0.1);
+            --shadow-lg: 0 20px 40px -10px rgba(14, 165, 233, 0.2);
+        }
+
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background-color: #f8fafc;
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ── Header / Navbar ── */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 16px 0;
+            transition: all 0.3s ease;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .nav-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+        .logo-text {
+            font-family: 'Sora', 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--dark);
+            letter-spacing: -0.5px;
+        }
+        .logo-text span {
+            color: var(--primary);
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--slate);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--dark);
+        }
+        .btn-ghost:hover {
+            background: rgba(14, 165, 233, 0.08);
+            color: var(--primary);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #ffffff;
+            box-shadow: 0 4px 18px var(--primary-glow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            color: #ffffff;
+            box-shadow: 0 4px 18px rgba(245, 158, 11, 0.3);
+        }
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45);
+        }
+        .btn-lg {
+            padding: 14px 32px;
+            font-size: 17px;
+            border-radius: 14px;
+        }
+
+        /* ── Hero Section ── */
+        .hero {
+            padding: 160px 0 100px;
+            position: relative;
+            background: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 50px;
+            align-items: center;
+        }
+        .badge-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--primary-dark);
+            border: 1px solid rgba(14, 165, 233, 0.25);
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .hero-title {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--dark);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-desc {
+            font-size: 19px;
+            color: var(--slate);
+            line-height: 1.7;
+            margin-bottom: 36px;
+        }
+        .hero-btns {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ── Telegram Preview Mockup ── */
+        .chat-mockup {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px -15px rgba(14, 165, 233, 0.25);
+            border: 1px solid #e0f2fe;
+            overflow: hidden;
+            position: relative;
+        }
+        .chat-header {
+            background: #0ea5e9;
+            color: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .bot-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .bot-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .chat-status {
+            font-size: 12px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .chat-body {
+            background: #f1f5f9;
+            padding: 24px 20px;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            position: relative;
+            line-height: 1.6;
+        }
+        .msg-user {
+            align-self: flex-start;
+            background: #0ea5e9;
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-bot {
+            align-self: flex-end;
+            background: #ffffff;
+            color: var(--dark);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+        }
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 14px;
+            background: #ffffff;
+            border-radius: 14px;
+            align-self: flex-end;
+            width: fit-content;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: typeBounce 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typeBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .inline-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .inline-btn {
+            background: rgba(14, 165, 233, 0.08);
+            border: 1px solid rgba(14, 165, 233, 0.25);
+            color: #0284c7;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .inline-btn:hover {
+            background: #0ea5e9;
+            color: #fff;
+        }
+
+        /* ── Features Section ── */
+        .section {
+            padding: 90px 0;
+        }
+        .section-header {
+            text-align: center;
+            max-width: 650px;
+            margin: 0 auto 60px;
+        }
+        .section-tag {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 16px;
+        }
+        .section-desc {
+            font-size: 17px;
+            color: var(--slate);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        .feature-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 36px 28px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(14, 165, 233, 0.4);
+            box-shadow: var(--shadow-lg);
+        }
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(14, 165, 233, 0.05));
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 22px;
+        }
+        .feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+        .feature-text {
+            font-size: 15px;
+            color: var(--slate);
+            line-height: 1.7;
+        }
+
+        /* ── Pricing Section ── */
+        .pricing-wrap {
+            max-width: 520px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 48px 40px;
+            border: 2px solid var(--primary);
+            box-shadow: 0 25px 60px -10px rgba(14, 165, 233, 0.2);
+            position: relative;
+            text-align: center;
+        }
+        .popular-badge {
+            position: absolute;
+            top: -16px;
+            right: 50%;
+            transform: translateX(50%);
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            color: #ffffff;
+            padding: 6px 20px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+        }
+        .price-val {
+            font-family: 'Sora', sans-serif;
+            font-size: 54px;
+            font-weight: 800;
+            color: var(--dark);
+            margin: 20px 0 6px;
+        }
+        .price-val span {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--slate);
+        }
+        .features-list {
+            list-style: none;
+            text-align: right;
+            margin: 32px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .features-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .features-list li i {
+            color: #10b981;
+            font-size: 16px;
+        }
+
+        /* ── Footer ── */
+        footer {
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            padding: 60px 0 30px;
+            margin-top: 60px;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .footer-bottom {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--slate);
+        }
+
+        @media (max-width: 860px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            .footer-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <header class="navbar">
+        <div class="container nav-wrap">
+            <a href="/" class="logo-wrap">
+                <img src="/static/logo.jpg" class="logo-img" alt="SmartBot Logo">
+                <span class="logo-text">Smart<span>Bot</span></span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="#features">المميزات</a></li>
+                <li><a href="#demo">معاينة حية</a></li>
+                <li><a href="#pricing">الأسعار</a></li>
+                <li><a href="https://wa.me/966500000000" target="_blank">الدعم الفني</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="/login" class="btn btn-ghost">تسجيل الدخول</a>
+                <a href="/register" class="btn btn-primary">ابدأ مجاناً 🚀</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-grid">
+            <div>
+                <div class="badge-chip">
+                    <span>⚡ مدعوم بأحدث نماذج Google Gemini AI</span>
+                </div>
+                <h1 class="hero-title">
+                    اربط بوت التلجرام بذكاء اصطناعي <span>يفهم عملاءك بدقة ولباقة</span>
+                </h1>
+                <p class="hero-desc">
+                    حوّل حساب التلجرام الخاص بك إلى موظف خدمة عملاء خارق يعمل 24/7. ردود فورية فائقة السرعة، أزرار تفاعلية أنيقة، وتأثير كتابة واقعي يجذب عملاءك.
+                </p>
+                <div class="hero-btns">
+                    <a href="/register" class="btn btn-primary btn-lg">
+                        <span>أنشئ بوتك الآن مجاناً</span>
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    <a href="#demo" class="btn btn-ghost btn-lg">
+                        <i class="fa-solid fa-play"></i>
+                        <span>شاهد المعاينة</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Telegram Chat Preview -->
+            <div class="chat-mockup" id="demo">
+                <div class="chat-header">
+                    <div class="bot-avatar">
+                        <img src="/static/logo.jpg" alt="SmartBot">
+                    </div>
+                    <div>
+                        <div style="font-weight: 800; font-size: 16px;">SmartBot Assistant</div>
+                        <div class="chat-status">
+                            <span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%;"></span>
+                            <span>متصل الآن • رد فوري</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-body">
+                    <div class="msg msg-user">
+                        مرحباً، هل تقدمون خدمات التوصيل السريع لجميع مناطق المملكة؟
+                    </div>
+
+                    <div class="typing-indicator" id="mockTyping" style="display: none;">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span style="font-size: 11px; color: #64748b; margin-right: 6px;">يكتب...</span>
+                    </div>
+
+                    <div class="msg msg-bot" id="mockBotMsg">
+                        <div>
+                            أهلاً بك عزيزي العميل! 🌟<br>
+                            نعم، نوفر خدمة <strong>التوصيل السريع</strong> خلال 24-48 ساعة لجميع مدن ومحافظات المملكة العربية السعودية. 🇸🇦<br><br>
+                            كيف يمكنني مساعدتك في طلبك اليوم؟
+                        </div>
+                        <div class="inline-btns">
+                            <div class="inline-btn">📦 تتبع طلبي</div>
+                            <div class="inline-btn">📋 قائمة الأسعار</div>
+                            <div class="inline-btn">💬 التحدث مع موظف</div>
+                            <div class="inline-btn">💳 طرق الدفع</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">إمكانيات غير محدودة</div>
+                <h2 class="section-title">كل ما تحتاجه لخدمة عملاء استثنائية</h2>
+                <p class="section-desc">صممت منصة SmartBot لتمنحك أحدث تقنيات أتمتة المحادثات بأعلى معايير السهولة والاحترافية.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h3 class="feature-title">ردود فورية وتأثير "يكتب..."</h3>
+                    <p class="feature-text">
+                        محاكاة واقعية للمحادثة البشرية بإرسال إشارة Typing في التلجرام قبل إرسال الرد بدقة عالية وسرعة فائقة.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-keyboard"></i>
+                    </div>
+                    <h3 class="feature-title">أزرار تفاعلية (Inline Keyboard)</h3>
+                    <p class="feature-text">
+                        دعم الأزرار المضمنة أسفل الرسائل لتمكين عملائك من التنقل السريع بين الخيارات والخدمات بنقرة واحدة.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="feature-title">تدريب مخصص (قاعدة معرفية)</h3>
+                    <p class="feature-text">
+                        أدخل معلومات متجرك، منتجاتك، أسئلتك الشائعة وسياساتك، وسيجيب البوت تماماً بما يتوافق مع أسلوب عملك.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <h3 class="feature-title">دفع آمن مع مطابقة الإيصالات</h3>
+                    <p class="feature-text">
+                        نظام دفع مالي مرن مع دعم رفع صور إيصالات التحويل البنكي وتأكيدها الفوري عبر لوحة الإدارة الذكية.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="feature-title">حماية وضوابط صارمة</h3>
+                    <p class="feature-text">
+                        حساب واحد لكل بوت مع نظام تحكم أمني شامل يضمن خصوصية بياناتك وتشفير الرموز السرية.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <h3 class="feature-title">دعم فني متواصل 24/7</h3>
+                    <p class="feature-text">
+                        فريق دعم فني متكامل جاهز لمساعدتك في ربط البوت وتهيئته عبر الواتساب والبريد الإلكتروني في أي وقت.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="section" id="pricing" style="background: #f1f5f9;">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">خطة أسعار واضحة ومباشرة</div>
+                <h2 class="section-title">اشتراك سنوي شامل لكل المميزات</h2>
+                <p class="section-desc">بدون رسوم خفية أو تعقيدات. ادفع مرة واحدة واستمتع بالخدمة طوال العام.</p>
+            </div>
+
+            <div class="pricing-wrap">
+                <div class="popular-badge">الأكثر طلباً ⭐</div>
+                <h3 style="font-size: 24px; font-weight: 800; color: var(--dark);">الاشتراك السنوي الكامل</h3>
+                <div class="price-val">50 <span>ريال سعودي / سنوياً</span></div>
+                <p style="color: var(--slate); font-size: 14px;">تجربة مجانية متاحة فور التسجيل</p>
+
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-circle-check"></i> بوت تلجرام ذكي ومخصص</li>
+                    <li><i class="fa-solid fa-circle-check"></i> عدد محادثات ورسائل غير محدود</li>
+                    <li><i class="fa-solid fa-circle-check"></i> تدريب كامل على قاعدة المعرفة الخاصة بك</li>
+                    <li><i class="fa-solid fa-circle-check"></i> تأثير الكتابة الواقعي وأزرار التفاعل</li>
+                    <li><i class="fa-solid fa-circle-check"></i> لوحة تحكم كاملة لإدارة المحادثات والإحصائيات</li>
+                    <li><i class="fa-solid fa-circle-check"></i> دعم فني مخصص طوال مدة الاشتراك</li>
+                </ul>
+
+                <a href="/register" class="btn btn-primary btn-lg" style="width: 100%;">
+                    <span>اشترك الآن وابدأ فوراً</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="logo-wrap" style="margin-bottom: 16px;">
+                        <img src="/static/logo.jpg" class="logo-img" alt="SmartBot Logo">
+                        <span class="logo-text">Smart<span>Bot</span></span>
+                    </div>
+                    <p style="color: var(--slate); font-size: 14px; max-width: 340px; line-height: 1.8;">
+                        المنصة العربية الرائدة في تحويل بوتات التلجرام إلى وكلاء ذكاء اصطناعي خارقين لخدمة العملاء وأتمتة الأعمال.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">روابط سريعة</h4>
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+                        <li><a href="/login" style="color: var(--slate); text-decoration: none;">تسجيل الدخول</a></li>
+                        <li><a href="/register" style="color: var(--slate); text-decoration: none;">إنشاء حساب جديد</a></li>
+                        <li><a href="/admin/login" style="color: var(--slate); text-decoration: none;">بوابة الإدارة</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">تواصل معنا</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--slate);">
+                        <span>📧 tamayozsoft.info@gmail.com</span>
+                        <span>📱 واتساب: 966500000000+</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>جميع الحقوق محفوظة © 2026 SmartBot AI Platform</div>
+                <div style="display: flex; gap: 16px;">
+                    <a href="#" style="color: var(--slate); text-decoration: none;">الشروط والأحكام</a>
+                    <a href="#" style="color: var(--slate); text-decoration: none;">سياسة الخصوصية</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

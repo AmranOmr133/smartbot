@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>وضع الصيانة والتطوير — SmartBot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background: #f0f7ff;
+            color: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .maintenance-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(14, 165, 233, 0.12);
+            border: 1px solid #e0f0ff;
+        }
+        .icon-circle {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(245,158,11,0.15));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            animation: bounce 2s infinite ease-in-out;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+        p {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 28px;
+        }
+        .badge-pulse {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 18px;
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 999px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #f59e0b;
+            border-radius: 50%;
+            box-shadow: 0 0 0 rgba(245,158,11, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(245,158,11, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(245,158,11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245,158,11, 0); }
+        }
+        .admin-link {
+            font-size: 13px;
+            color: #0ea5e9;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .admin-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="maintenance-card">
+        <div class="icon-circle">⚙️</div>
+        <div class="badge-pulse">
+            <span class="dot"></span>
+            تحديثات وتطوير النظام جارية
+        </div>
+        <h1>المنصة قيد الصيانة المؤقتة</h1>
+        <p>
+            نقوم حالياً بإجراء بعض التحسينات والترقيات الهامة لتوفير أفضل تجربة ذكاء اصطناعي لبوتات التلجرام. سنعود للعمل بكامل طاقتنا في أقرب وقت.
+        </p>
+        <div style="border-top: 1px solid #e0f0ff; padding-top: 20px;">
+            <a href="/admin/login" class="admin-link">🔑 تسجيل دخول الإدارة (Admin Login)</a>
+        </div>
+    </div>
+</body>
+</html>

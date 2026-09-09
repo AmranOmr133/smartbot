@@ -1,0 +1,129 @@
+{% extends "admin/layout.html" %}
+{% block title %}لوحة التحكم - SmartBot Admin{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+{% block page_breadcrumb %}نظرة عامة على المنصة{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card purple">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value">{{ stats.total_users }}</div>
+        <div class="stat-label">إجمالي المستخدمين</div>
+        <div class="stat-change up">+{{ stats.new_users_today }} اليوم</div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-icon">🤖</div>
+        <div class="stat-value">{{ stats.active_bots }}</div>
+        <div class="stat-label">البوتات النشطة</div>
+        <div class="stat-change neutral">بوت نشط</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon">🎫</div>
+        <div class="stat-value">{{ stats.active_subs }}</div>
+        <div class="stat-label">الاشتراكات الفعالة</div>
+        <div class="stat-change up">سنوي 50 ريال</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value">{{ stats.total_revenue | int }} ر.س</div>
+        <div class="stat-label">إجمالي الإيرادات</div>
+        <div class="stat-change up">مؤكدة</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">{{ stats.pending_payments }}</div>
+        <div class="stat-label">مدفوعات معلقة</div>
+        {% if stats.pending_payments > 0 %}
+        <div class="stat-change neutral"><a href="/admin/payments" style="color:inherit;text-decoration:none;">راجع الآن ←</a></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Content Grid -->
+<div class="grid-2">
+    <!-- Recent Users -->
+    <div class="data-card">
+        <div class="data-card-header">
+            <div>
+                <div class="data-card-title">أحدث المستخدمين</div>
+                <div class="data-card-subtitle">آخر 5 مسجلين</div>
+            </div>
+            <a href="/admin/users" class="btn btn-ghost btn-sm">عرض الكل</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in recent_users %}
+                <tr>
+                    <td>
+                        <div style="font-weight:600;color:#fff;">{{ user.full_name }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">{{ user.email }}</div>
+                    </td>
+                    <td>
+                        {% if user.sub_status == 'active' %}
+                        <span class="badge badge-active">✅ نشط</span>
+                        {% elif user.sub_status == 'trial' %}
+                        <span class="badge badge-trial">🔮 تجربة</span>
+                        {% else %}
+                        <span class="badge badge-expired">منتهي</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;">{{ user.created_at[:10] if user.created_at else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text-muted);">لا يوجد مستخدمون بعد</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="data-card">
+        <div class="data-card-header">
+            <div>
+                <div class="data-card-title">آخر المدفوعات</div>
+                <div class="data-card-subtitle">طلبات الدفع الأخيرة</div>
+            </div>
+            <a href="/admin/payments" class="btn btn-ghost btn-sm">عرض الكل</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th>المبلغ</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in recent_payments %}
+                <tr>
+                    <td>
+                        <div style="font-weight:600;color:#fff;">{{ p.full_name }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">{{ p.payment_method }}</div>
+                    </td>
+                    <td style="font-weight:700;color:#fff;">{{ p.amount | int }} ر.س</td>
+                    <td>
+                        {% if p.status == 'approved' %}
+                        <span class="badge badge-active">✅ مقبول</span>
+                        {% elif p.status == 'pending' %}
+                        <span class="badge badge-pending">⏳ معلق</span>
+                        {% else %}
+                        <span class="badge badge-inactive">❌ مرفوض</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text-muted);">لا توجد مدفوعات بعد</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

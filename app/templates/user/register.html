@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBot - إنشاء حساب</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #06060d;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 70% at 10% 20%, rgba(99,102,241,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 50% at 90% 80%, rgba(168,85,247,0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .container {
+            width: 100%;
+            max-width: 520px;
+            position: relative;
+            z-index: 2;
+        }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 12px;
+            box-shadow: 0 12px 30px rgba(99,102,241,0.4);
+        }
+        .logo-area h1 { font-size: 24px; font-weight: 800; color: #fff; }
+        .logo-area p { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+        .card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 24px;
+            padding: 36px;
+        }
+        .card-header {
+            margin-bottom: 28px;
+        }
+        .card-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .card-subtitle { font-size: 14px; color: rgba(255,255,255,0.4); }
+
+        .trial-banner {
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+            border: 1px solid rgba(99,102,241,0.25);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #c4b5fd;
+        }
+        .trial-banner .emoji { font-size: 20px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-full { grid-column: span 2; }
+
+        .form-group { margin-bottom: 0; }
+        .form-label {
+            display: block;
+            color: rgba(255,255,255,0.65);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 7px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14px;
+            transition: all 0.25s;
+            outline: none;
+        }
+        .form-input:focus {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.06);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+        .form-input::placeholder { color: rgba(255,255,255,0.2); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(99,102,241,0.4);
+        }
+        .error-box {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #fca5a5;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+        }
+        .form-footer a { color: #a5b4fc; text-decoration: none; font-weight: 600; }
+        .form-footer a:hover { color: #fff; }
+
+        @media (max-width: 500px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .form-full { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body lang="{{ 'ar' if lang != 'en' else 'en' }}" dir="{{ 'rtl' if lang != 'en' else 'ltr' }}">
+    <div class="container">
+        <div style="width:100%;display:flex;justify-content:flex-end;margin-bottom:14px;">
+            {% if lang != 'en' %}
+            <a href="/register?lang=en" style="color:#94a3b8;font-size:12px;text-decoration:none;padding:5px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">🌐 English</a>
+            {% else %}
+            <a href="/register?lang=ar" style="color:#94a3b8;font-size:12px;text-decoration:none;padding:5px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">🌐 العربية</a>
+            {% endif %}
+        </div>
+
+        <div class="logo-area">
+            <div class="logo-icon">🤖</div>
+            <h1>SmartBot</h1>
+            <p>{% if lang != 'en' %}إنشاء حساب جديد مجاناً{% else %}Create Free Account{% endif %}</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">{% if lang != 'en' %}أنشئ حسابك الآن 🚀{% else %}Create Your Account 🚀{% endif %}</div>
+                <div class="card-subtitle">{% if lang != 'en' %}احصل على 10 أيام تجربة مجانية فور تأكيد البريد{% else %}Get a 10-day free trial right after email verification{% endif %}</div>
+            </div>
+
+            <div class="trial-banner">
+                <span class="emoji">🎁</span>
+                <div>
+                    <strong>{% if lang != 'en' %}تجربة مجانية لمدة 10 أيام{% else %}10-Day Free Trial{% endif %}</strong><br>
+                    <span style="opacity:0.7;">{% if lang != 'en' %}سيصلك رمز تحقق رقمي لتأكيد بريدك والبدء فوراً{% else %}A digital OTP code will be sent to verify your email and start immediately{% endif %}</span>
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="error-box">⚠️ {{ error }}</div>
+            {% endif %}
+
+            <form action="/register" method="POST">
+                <input type="hidden" name="lang" value="{{ lang }}">
+
+                <div class="form-grid">
+                    <div class="form-group form-full">
+                        <label class="form-label">{% if lang != 'en' %}الاسم الكامل{% else %}Full Name{% endif %}</label>
+                        <input type="text" name="full_name" class="form-input" placeholder="{% if lang != 'en' %}محمد أحمد{% else %}John Doe{% endif %}" required>
+                    </div>
+                    <div class="form-group form-full">
+                        <label class="form-label">{% if lang != 'en' %}البريد الإلكتروني (لتلقي رمز التحقق){% else %}Email Address (for verification code){% endif %}</label>
+                        <input type="email" name="email" class="form-input" placeholder="example@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{% if lang != 'en' %}كلمة المرور{% else %}Password{% endif %}</label>
+                        <input type="password" name="password" class="form-input" placeholder="{% if lang != 'en' %}8 أحرف على الأقل{% else %}At least 8 chars{% endif %}" required minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{% if lang != 'en' %}تأكيد كلمة المرور{% else %}Confirm Password{% endif %}</label>
+                        <input type="password" name="password_confirm" class="form-input" placeholder="{% if lang != 'en' %}أعد كتابة المرور{% else %}Repeat password{% endif %}" required minlength="8">
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">
+                    {% if lang != 'en' %}متابعة وإرسال رمز التحقق ✉️{% else %}Continue & Send Verification Code ✉️{% endif %}
+                </button>
+            </form>
+
+            <div class="form-footer">
+                {% if lang != 'en' %}
+                لديك حساب بالفعل؟ <a href="/login?lang={{ lang }}">تسجيل الدخول</a>
+                {% else %}
+                Already have an account? <a href="/login?lang={{ lang }}">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

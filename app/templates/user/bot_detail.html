@@ -1,0 +1,463 @@
+{% extends "user/layout.html" %}
+{% block title %}{{ bot.name }} - SmartBot{% endblock %}
+{% block page_title %}{{ bot.name }}{% endblock %}
+{% block page_sub %}إدارة وإعداد البوت{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-sm btn-ghost" onclick="document.getElementById('editSettingsModal').classList.add('show')">⚙️ الإعدادات</button>
+<button class="btn btn-sm {% if bot.is_active %}btn-danger{% else %}btn-success{% endif %}"
+        id="toggle-btn" onclick="toggleBot()">
+    {% if bot.is_active %}⏸ إيقاف{% else %}▶️ تشغيل{% endif %}
+</button>
+<button class="btn btn-sm btn-danger" onclick="deleteBot()">🗑️ حذف</button>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+    <!-- Bot Info Card -->
+    <div class="card" style="padding:20px;">
+        <div style="font-weight:700;margin-bottom:14px;">معلومات البوت</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--muted);">المنصة</span>
+                <span class="badge" style="background:rgba(41,182,246,0.1);color:#4fc3f7;border:1px solid rgba(41,182,246,0.2);">✈️ تيليغرام</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--muted);">الذكاء الاصطناعي</span>
+                {% if bot.ai_enabled %}<span class="badge badge-active">🧠 مفعل</span>{% else %}<span class="badge badge-inactive">معطل</span>{% endif %}
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--muted);">اللغة</span>
+                <span>{{ bot.language or 'ar' }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--muted);">الحالة</span>
+                {% if bot.is_active %}<span class="badge badge-active">🟢 نشط</span>{% else %}<span class="badge badge-inactive">🔴 متوقف</span>{% endif %}
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--muted);">تاريخ الإنشاء</span>
+                <span>{{ bot.created_at[:10] if bot.created_at else '-' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Card -->
+    <div class="card" style="padding:20px;">
+        <div style="font-weight:700;margin-bottom:14px;">إحصائيات</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="background:rgba(99,102,241,0.08);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:24px;font-weight:800;">{{ conversations | length }}</div>
+                <div style="font-size:11px;color:var(--muted);">محادثة</div>
+            </div>
+            <div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:24px;font-weight:800;">{{ knowledge | length }}</div>
+                <div style="font-size:11px;color:var(--muted);">معلومة</div>
+            </div>
+        </div>
+        {% if bot.is_active and bot.token %}
+        <div style="margin-top:14px;padding:10px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:10px;font-size:12px;color:#6ee7b7;">
+            ✅ الويب هوك مُفعّل — البوت يعمل الآن
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Knowledge Base -->
+<div class="card" style="margin-bottom:18px;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+            <div style="font-weight:700;">قاعدة المعرفة ({{ knowledge | length }})</div>
+            <div style="font-size:12px;color:var(--muted);">المعلومات التي يستخدمها الذكاء الاصطناعي للإجابة</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('addKbModal').classList.add('show')">+ إضافة معلومة</button>
+    </div>
+    {% if knowledge %}
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;">
+        {% for kb in knowledge %}
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:14px;margin-bottom:4px;">{{ kb.title }}</div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.5;">{{ kb.content[:120] }}{% if kb.content | length > 120 %}...{% endif %}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteKb({{ kb.id }}, this)">🗑️</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:40px;text-align:center;color:var(--muted);">
+        <div style="font-size:36px;margin-bottom:10px;">📚</div>
+        <div>أضف معلومات ليستخدمها البوت في إجاباته</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Telegram Exclusive Group Binding & Botrun -->
+<div class="card" style="margin-bottom:24px;border:1px solid rgba(14,165,233,0.3);background:linear-gradient(180deg, rgba(14,165,233,0.03) 0%, rgba(15,23,42,0.4) 100%);">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(14,165,233,0.15);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:18px;">
+                👥
+            </div>
+            <div>
+                <div style="font-weight:800;font-size:16px;color:var(--text);">ربط المجموعة الحصرية وكلمة التفعيل (Telegram Group)</div>
+                <div style="font-size:12px;color:var(--muted);">حصر عمل البوت داخل مجموعة معينة والرد بالاقتباس عند كتابة {{ bot.group_trigger or 'botrun' }}</div>
+            </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('editSettingsModal').classList.add('show')" style="border-color:rgba(14,165,233,0.3);color:var(--blue);">
+            ⚙️ تعديل الإعدادات
+        </button>
+    </div>
+    <div style="padding:20px 22px;">
+        {% if bot.allowed_group_id %}
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:16px 20px;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div style="font-size:26px;">🔒</div>
+                <div>
+                    <div style="font-weight:700;color:var(--text);font-size:15px;display:flex;align-items:center;gap:8px;">
+                        <span>البوت مربوط حصرياً بمجموعة:</span>
+                        <span style="color:#10b981;font-weight:800;">{{ bot.allowed_group_title or 'المجموعة المعتمدة' }}</span>
+                        <span class="badge badge-active" style="font-size:10px;padding:2px 8px;">حماية مفعلة</span>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--muted);margin-top:4px;">
+                        معرف المجموعة: <code style="direction:ltr;background:rgba(0,0,0,0.3);padding:2px 8px;border-radius:6px;font-family:monospace;">{{ bot.allowed_group_id }}</code> 
+                        • كلمة التفعيل الحالية: <span style="background:rgba(14,165,233,0.2);color:var(--blue);padding:2px 8px;border-radius:6px;font-weight:700;">{{ bot.group_trigger or 'botrun' }}</span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="unbindGroup()">🔓 فك ارتباط المجموعة</button>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;">
+            💡 <strong>آلية العمل:</strong> البوت يتجاهل أي مجموعة أخرى بشكل تام ولا يستجيب إلا داخل هذه المجموعة عند كتابة <code>{{ bot.group_trigger or 'botrun' }}</code> في بداية أو سياق الرسالة، ويرد مباشرة بالاقتباس على رسالة السائل.
+        </div>
+        {% else %}
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);border:1px dashed var(--border);border-radius:12px;padding:18px 20px;flex-wrap:wrap;gap:14px;">
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+                <div style="font-size:28px;line-height:1;">🚀</div>
+                <div>
+                    <div style="font-weight:700;color:var(--text);font-size:14.5px;">البوت غير مربوط بمجموعة حتى الآن (الربط التلقائي متاح)</div>
+                    <div style="font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5;">
+                        لربط البوت بمجموعتك بكل سهولة:
+                        <ol style="margin:6px 0 0 18px;padding:0;color:var(--text2);">
+                            <li>أضف البوت إلى مجموعتك في تلجرام وقم بترقيته إلى <strong>مشرف (Admin)</strong>.</li>
+                            <li>أرسل الأمر <code>/bind</code> داخل مجموعتك وسيقوم البوت بربط نفسه فورياً وتأكيد العملية.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary btn-sm" onclick="document.getElementById('editSettingsModal').classList.add('show')">
+                    ➕ إدخال المعرف يدوياً
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Conversations -->
+<div class="card" style="margin-bottom:24px;">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+            <div style="font-weight:800;font-size:16px;color:var(--text);">💬 آخر المحادثات مع هذا البوت ({{ conversations | length }})</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">العملاء الذين تفاعلوا مع البوت وسجل الرسائل المتبادلة</div>
+        </div>
+    </div>
+    {% if conversations %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th>آخر رسالة</th>
+                    <th>عدد الرسائل</th>
+                    <th>آخر نشاط</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conv in conversations %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">
+                                {{ conv.chat_name[:1] if conv.chat_name else '👤' }}
+                            </div>
+                            <div>
+                                <div style="font-weight:700;color:var(--text);font-size:13.5px;">{{ conv.chat_name or conv.chat_id }}</div>
+                                {% if conv.chat_username %}
+                                <div style="font-size:11px;color:var(--blue);direction:ltr;text-align:right;">@{{ conv.chat_username }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="max-width:280px;">
+                        <div style="font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ conv.last_message }}">
+                            {{ conv.last_message or 'بدأت المحادثة' }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-trial" style="font-size:11px;font-weight:700;">
+                            {{ conv.messages_count }} رسائل
+                        </span>
+                    </td>
+                    <td style="font-size:12px;color:var(--muted);white-space:nowrap;">
+                        {{ conv.last_activity[:16] if conv.last_activity else '-' }}
+                    </td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" onclick="openChatModal({{ conv.id }}, '{{ conv.chat_name | escape }}')">
+                            👁️ عرض المحادثة
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding:40px;text-align:center;color:var(--muted);">
+        <div style="font-size:36px;margin-bottom:10px;">💬</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px;">لا توجد محادثات بعد</div>
+        <div style="font-size:12px;">شارك رابط البوت مع عملائك في التلجرام وستظهر جميع المحادثات هنا فورياً.</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Knowledge Modal -->
+<div class="modal-overlay" id="addKbModal">
+    <div class="modal">
+        <button class="modal-close" onclick="document.getElementById('addKbModal').classList.remove('show')">✕</button>
+        <div class="modal-title">إضافة معلومة لقاعدة المعرفة</div>
+        <div class="modal-sub">ستُستخدم هذه المعلومات في ردود الذكاء الاصطناعي</div>
+        <form id="kbForm" onsubmit="addKb(event)">
+            <div class="form-group">
+                <label class="form-label">العنوان</label>
+                <input type="text" name="title" class="form-input" placeholder="مثال: سياسة الإرجاع" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">المحتوى</label>
+                <textarea name="content" class="form-input" rows="5" placeholder="أدخل المحتوى هنا..." required></textarea>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;">✅ إضافة</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('addKbModal').classList.remove('show')">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Settings Modal -->
+<div class="modal-overlay" id="editSettingsModal">
+    <div class="modal" style="max-width:540px;">
+        <button class="modal-close" onclick="document.getElementById('editSettingsModal').classList.remove('show')">✕</button>
+        <div class="modal-title">⚙️ إعدادات البوت والذكاء الاصطناعي</div>
+        <div class="modal-sub">تحديث التوجيهات والرسائل الخاصة بالبوت</div>
+        <form id="settingsForm" onsubmit="saveSettings(event)">
+            <div class="form-group">
+                <label class="form-label">اسم البوت</label>
+                <input type="text" name="name" class="form-input" value="{{ bot.name }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">الوصف</label>
+                <input type="text" name="description" class="form-input" value="{{ bot.description or '' }}" placeholder="وصف موجز للبوت">
+            </div>
+            <div class="form-group">
+                <label class="form-label">رسالة الترحيب (/start)</label>
+                <textarea name="welcome_message" class="form-input" rows="2" placeholder="الرسالة التي تظهر للمستخدم فور بدء المحادثة">{{ bot.welcome_message or '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">توجيهات الذكاء الاصطناعي (System Prompt)</label>
+                <textarea name="system_prompt" class="form-input" rows="4" placeholder="تعليمات سلوك البوت وأسلوبه...">{{ bot.system_prompt or '' }}</textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div>
+                    <label class="form-label">اللغة الأساسية</label>
+                    <select name="language" class="form-input">
+                        <option value="ar" {% if bot.language == 'ar' %}selected{% endif %}>العربية</option>
+                        <option value="en" {% if bot.language == 'en' %}selected{% endif %}>English</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">الذكاء الاصطناعي</label>
+                    <select name="ai_enabled" class="form-input">
+                        <option value="1" {% if bot.ai_enabled %}selected{% endif %}>مفعل 🧠</option>
+                        <option value="0" {% if not bot.ai_enabled %}selected{% endif %}>معطل</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px;margin-bottom:14px;">
+                <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;">
+                    🛡️ إعدادات المجموعة الحصرية (Telegram Group)
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div>
+                        <label class="form-label">معرف المجموعة (Group ID)</label>
+                        <input type="text" name="allowed_group_id" class="form-input" style="direction:ltr;text-align:right;" value="{{ bot.allowed_group_id or '' }}" placeholder="مثال: -100123456789">
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">اتركه فارغاً، أو استخدم /bind داخل القروب للربط التلقائي</div>
+                    </div>
+                    <div>
+                        <label class="form-label">كلمة التفعيل في المجموعات</label>
+                        <input type="text" name="group_trigger" class="form-input" style="direction:ltr;text-align:right;" value="{{ bot.group_trigger or 'botrun' }}" placeholder="botrun" required>
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">الكلمة التي يستجيب لها البوت (افتراضياً: botrun)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:8px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;">💾 حفظ التغييرات</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('editSettingsModal').classList.remove('show')">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const BOT_ID = {{ bot.id }};
+
+async function toggleBot() {
+    const res = await api(`/bots/${BOT_ID}/toggle`);
+    if (res.success) {
+        showToast(res.is_active ? 'تم تشغيل البوت ✅' : 'تم إيقاف البوت', 'ok');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+async function deleteBot() {
+    if (!confirm('هل تريد حذف هذا البوت نهائياً؟ لن تتمكن من استرداده.')) return;
+    const res = await api(`/bots/${BOT_ID}/delete`);
+    if (res.success) {
+        showToast('تم حذف البوت', 'ok');
+        setTimeout(() => location.href = '/bots', 1000);
+    }
+}
+
+async function saveSettings(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = new FormData(form);
+    const res = await fetch(`/bots/${BOT_ID}/settings`, { method: 'POST', body: data });
+    const json = await res.json();
+    if (json.success) {
+        showToast('تم حفظ التعديلات بنجاح ✅', 'ok');
+        setTimeout(() => location.reload(), 800);
+    } else {
+        showToast(json.error || 'حدث خطأ أثناء الحفظ', 'error');
+    }
+}
+
+async function unbindGroup() {
+    if (!confirm('هل أنت متأكد من فك ارتباط البوت بهذه المجموعة؟ لن يستجيب البوت لرسائل القروب بعد ذلك.')) return;
+    const res = await api(`/bots/${BOT_ID}/unbind-group`);
+    if (res.success) {
+        showToast('تم فك ارتباط المجموعة بنجاح ✅', 'ok');
+        setTimeout(() => location.reload(), 800);
+    } else {
+        showToast(res.error || 'حدث خطأ أثناء فك الارتباط', 'error');
+    }
+}
+
+async function addKb(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = new FormData(form);
+    const res = await fetch(`/bots/${BOT_ID}/knowledge`, { method: 'POST', body: data });
+    const json = await res.json();
+    if (json.success) {
+        showToast('تم إضافة المعلومة بنجاح ✅', 'ok');
+        setTimeout(() => location.reload(), 800);
+    }
+}
+
+    async function deleteKb(kbId, btn) {
+        if (!confirm('حذف هذه المعلومة؟')) return;
+        const res = await api(`/bots/${BOT_ID}/knowledge/${kbId}/delete`);
+        if (res.success) {
+            btn.closest('div').remove();
+            showToast('تم حذف المعلومة', 'ok');
+        }
+    }
+
+    async function openChatModal(convId, userName) {
+        document.getElementById('modalChatUser').textContent = userName || 'المستخدم';
+        document.getElementById('modalChatSub').textContent = 'محادثة رقم #' + convId;
+        const body = document.getElementById('chatMessagesBody');
+        body.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">⏳ جاري تحميل المحادثة...</div>';
+        document.getElementById('chatModal').classList.add('show');
+
+        try {
+            const res = await fetch(`/conversations/${convId}/messages`);
+            const json = await res.json();
+            if (!json.success || !json.messages || json.messages.length === 0) {
+                body.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">لا توجد رسائل مسجلة لهذه المحادثة بعد.</div>';
+                return;
+            }
+
+            body.innerHTML = '';
+            json.messages.forEach(msg => {
+                const isUser = (msg.role === 'user');
+                const div = document.createElement('div');
+                div.style.maxWidth = '80%';
+                div.style.alignSelf = isUser ? 'flex-start' : 'flex-end';
+                div.style.background = isUser ? '#0ea5e9' : '#ffffff';
+                div.style.color = isUser ? '#ffffff' : '#0f172a';
+                div.style.padding = '10px 14px';
+                div.style.borderRadius = '14px';
+                div.style.boxShadow = isUser ? '0 2px 8px rgba(14,165,233,0.3)' : '0 2px 8px rgba(0,0,0,0.06)';
+                div.style.border = isUser ? 'none' : '1px solid #e2e8f0';
+                div.style.fontSize = '13.5px';
+                div.style.lineHeight = '1.5';
+                div.style.wordBreak = 'break-word';
+
+                const senderLabel = isUser ? '👤 العميل' : '🤖 البوت';
+                const timeStr = msg.created_at ? msg.created_at.substring(11, 16) : '';
+
+                div.innerHTML = `
+                    <div style="font-size:10px;opacity:0.8;margin-bottom:3px;font-weight:700;">${senderLabel} • ${timeStr}</div>
+                    <div style="white-space:pre-wrap;">${escapeHtml(msg.content)}</div>
+                `;
+                body.appendChild(div);
+            });
+
+            body.scrollTop = body.scrollHeight;
+        } catch (e) {
+            body.innerHTML = '<div style="text-align:center;color:var(--danger);padding:40px 0;">حدث خطأ أثناء تحميل الرسائل.</div>';
+        }
+    }
+
+    function closeChatModal() {
+        document.getElementById('chatModal').classList.remove('show');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+
+<!-- Chat Log Modal -->
+<div class="modal-overlay" id="chatModal" onclick="closeChatModal()">
+    <div class="modal" style="max-width:600px;max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden;" onclick="event.stopPropagation()">
+        <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:40px;height:40px;border-radius:12px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">
+                    💬
+                </div>
+                <div>
+                    <div id="modalChatUser" style="font-weight:800;font-size:16px;color:var(--text);">محادثة المستخدم</div>
+                    <div id="modalChatSub" style="font-size:12px;color:var(--muted);">سجل الرسائل الكامل</div>
+                </div>
+            </div>
+            <button onclick="closeChatModal()" class="modal-close" style="position:static;">✕</button>
+        </div>
+        <div id="chatMessagesBody" style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;background:#f8fafc;min-height:300px;max-height:480px;">
+            <div style="text-align:center;color:var(--muted);padding:40px 0;">جاري تحميل الرسائل...</div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid var(--border);background:#fff;text-align:left;">
+            <button class="btn btn-ghost btn-sm" onclick="closeChatModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

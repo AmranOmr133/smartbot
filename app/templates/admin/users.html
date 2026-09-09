@@ -1,0 +1,248 @@
+{% extends "admin/layout.html" %}
+{% block title %}المستخدمون — SmartBot Admin{% endblock %}
+{% block page_title %}👥 إدارة المستخدمين{% endblock %}
+{% block page_breadcrumb %}SmartBot Admin / المستخدمون{% endblock %}
+
+{% block topbar_actions %}
+<form method="get" action="/admin/users" style="display:flex;gap:8px;">
+    <input type="text" name="search" value="{{ search }}" placeholder="بحث بالاسم أو الإيميل..." class="form-input" style="width:220px;padding:8px 14px;font-size:13px;">
+    <button type="submit" class="btn btn-primary btn-sm">🔍 بحث</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="data-card">
+    <div class="data-card-header">
+        <div>
+            <div class="data-card-title">قائمة المستخدمين</div>
+            <div class="data-card-subtitle">{{ users|length }} مستخدم مسجل</div>
+        </div>
+        <div>
+            <span class="badge badge-active">✅ نشط: {{ users|selectattr('is_active','eq',1)|list|length }}</span>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>المستخدم</th>
+                    <th>البوتات</th>
+                    <th>الاشتراك</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr id="user-row-{{ u.id }}">
+                    <td style="color:var(--muted);font-size:12px;">{{ u.id }}</td>
+                    <td>
+                        <div style="font-weight:700;color:var(--text);">{{ u.full_name }}</div>
+                        <div style="font-size:11px;color:var(--muted);">{{ u.email }}</div>
+                        {% if u.phone %}<div style="font-size:11px;color:var(--muted);">📞 {{ u.phone }}</div>{% endif %}
+                        {% if u.is_suspended %}<div class="badge badge-suspended" style="margin-top:4px;font-size:10px;">⚠️ موقوف</div>{% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight:700;font-size:16px;color:var(--blue-dark);">{{ u.bots_count or 0 }}</span>
+                        <span style="font-size:11px;color:var(--muted);"> بوت</span>
+                    </td>
+                    <td>
+                        {% if u.sub_status == 'active' %}<span class="badge badge-active">✅ نشط</span>
+                        {% elif u.sub_status == 'trial' %}<span class="badge badge-trial">🔮 تجربة</span>
+                        {% else %}<span class="badge badge-expired">❌ منتهي</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_active and not u.is_suspended %}<span class="badge badge-active">🟢 فعّال</span>
+                        {% elif u.is_suspended %}<span class="badge badge-suspended">⚠️ موقوف</span>
+                        {% else %}<span class="badge badge-inactive">🔴 موقوف</span>{% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--muted);">
+                        {{ u.created_at[:10] if u.created_at else '—' }}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                            <a href="/admin/users/{{ u.id }}" class="btn btn-ghost btn-sm" title="تفاصيل">👁️</a>
+                            <button class="btn btn-ghost btn-sm" onclick="openEditModal({{ u.id }}, '{{ u.full_name|replace("'","\\'")|e }}', '{{ u.email }}', '{{ u.phone or '' }}')" title="تعديل">✏️</button>
+                            <button class="btn btn-{{ 'danger' if u.is_active else 'success' }} btn-sm"
+                                onclick="toggleUser({{ u.id }}, this)"
+                                title="{{ 'إيقاف' if u.is_active else 'تفعيل' }}">
+                                {{ '🚫' if u.is_active else '✅' }}
+                            </button>
+                            <button class="btn btn-{{ 'warning' if not u.is_suspended else 'success' }} btn-sm"
+                                onclick="toggleSuspend({{ u.id }}, {{ 1 if u.is_suspended else 0 }}, this)"
+                                title="{{ 'رفع التعليق' if u.is_suspended else 'تعليق الحساب' }}">
+                                {{ '🔓' if u.is_suspended else '⚠️' }}
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="grantSub({{ u.id }})" title="منح اشتراك">🎫</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser({{ u.id }})" title="حذف">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not users %}
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted);">لا يوجد مستخدمون</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+        <div class="modal-title">✏️ تعديل بيانات المستخدم</div>
+        <div class="modal-sub">تعديل المعلومات الشخصية وبيانات الدخول</div>
+        <input type="hidden" id="editUserId">
+        <div class="form-group">
+            <label class="form-label">الاسم الكامل</label>
+            <input class="form-input" id="editName" type="text" placeholder="الاسم الكامل">
+        </div>
+        <div class="form-group">
+            <label class="form-label">البريد الإلكتروني</label>
+            <input class="form-input" id="editEmail" type="email" placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+            <label class="form-label">رقم الهاتف (اختياري)</label>
+            <input class="form-input" id="editPhone" type="text" placeholder="+967...">
+        </div>
+        <div class="form-group">
+            <label class="form-label">كلمة المرور الجديدة (اتركها فارغة للإبقاء)</label>
+            <input class="form-input" id="editPassword" type="password" placeholder="••••••••">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-primary" onclick="saveEdit()" style="flex:1;">💾 حفظ التعديلات</button>
+            <button class="btn btn-ghost" onclick="closeModal('editModal')" style="flex:1;">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- Suspend User Modal -->
+<div class="modal-overlay" id="suspendModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('suspendModal')">✕</button>
+        <div class="modal-title">⚠️ تعليق الحساب</div>
+        <div class="modal-sub">سيتم منع المستخدم من تسجيل الدخول والرد على العملاء</div>
+        <input type="hidden" id="suspendUserId">
+        <div class="form-group">
+            <label class="form-label">سبب التعليق</label>
+            <textarea class="form-input" id="suspendReason" rows="3" placeholder="أذكر سبب تعليق الحساب..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-warning" onclick="confirmSuspend()" style="flex:1;">⚠️ تأكيد التعليق</button>
+            <button class="btn btn-ghost" onclick="closeModal('suspendModal')" style="flex:1;">إلغاء</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+function openEditModal(id, name, email, phone) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editPhone').value = phone;
+    document.getElementById('editPassword').value = '';
+    document.getElementById('editModal').classList.add('show');
+}
+
+async function saveEdit() {
+    const id = document.getElementById('editUserId').value;
+    const fd = new FormData();
+    fd.append('full_name', document.getElementById('editName').value);
+    fd.append('email', document.getElementById('editEmail').value);
+    fd.append('phone', document.getElementById('editPhone').value);
+    fd.append('new_password', document.getElementById('editPassword').value);
+    const res = await fetch(`/admin/users/${id}/edit`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.success) {
+        showToast(data.message || 'تم تحديث البيانات', 'success');
+        closeModal('editModal');
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        showToast(data.error || 'حدث خطأ', 'error');
+    }
+}
+
+async function toggleUser(id, btn) {
+    const data = await apiCall(`/admin/users/${id}/toggle-status`);
+    if (data.success) {
+        showToast(data.is_active ? 'تم تفعيل المستخدم ✅' : 'تم إيقاف المستخدم 🚫', 'success');
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        showToast('حدث خطأ', 'error');
+    }
+}
+
+let suspendCurrentStatus = 0;
+function toggleSuspend(id, isSuspended, btn) {
+    if (isSuspended) {
+        // Unsuspend directly
+        doSuspend(id, '');
+        return;
+    }
+    // Show suspend modal
+    document.getElementById('suspendUserId').value = id;
+    document.getElementById('suspendReason').value = '';
+    suspendCurrentStatus = isSuspended;
+    document.getElementById('suspendModal').classList.add('show');
+}
+
+async function confirmSuspend() {
+    const id = document.getElementById('suspendUserId').value;
+    const reason = document.getElementById('suspendReason').value;
+    await doSuspend(id, reason);
+    closeModal('suspendModal');
+}
+
+async function doSuspend(id, reason) {
+    const fd = new FormData();
+    fd.append('reason', reason);
+    const res = await fetch(`/admin/users/${id}/suspend`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.success) {
+        showToast(data.is_suspended ? 'تم تعليق الحساب ⚠️' : 'تم رفع التعليق ✅', 'success');
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        showToast('حدث خطأ', 'error');
+    }
+}
+
+async function grantSub(id) {
+    if (!confirm('منح هذا المستخدم اشتراكاً لمدة سنة كاملة؟')) return;
+    const data = await apiCall(`/admin/users/${id}/grant-subscription`);
+    if (data.success) {
+        showToast(data.message || 'تم منح الاشتراك ✅', 'success');
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        showToast('حدث خطأ', 'error');
+    }
+}
+
+async function deleteUser(id) {
+    if (!confirm('⚠️ تحذير: سيتم حذف المستخدم وجميع بياناته نهائياً. هل أنت متأكد؟')) return;
+    if (!confirm('تأكيد نهائي: حذف المستخدم بشكل دائم؟')) return;
+    const data = await apiCall(`/admin/users/${id}/delete`);
+    if (data.success) {
+        showToast('تم حذف المستخدم نهائياً', 'success');
+        const row = document.getElementById(`user-row-${id}`);
+        if (row) row.remove();
+    } else {
+        showToast('حدث خطأ', 'error');
+    }
+}
+
+['editModal','suspendModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) closeModal(id);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "admin/layout.html" %}
+{% block title %}البوتات - SmartBot Admin{% endblock %}
+{% block page_title %}إدارة البوتات{% endblock %}
+{% block page_breadcrumb %}مراقبة جميع بوتات التليغرام{% endblock %}
+
+{% block content %}
+<div class="data-card">
+    <div class="data-card-header">
+        <div>
+            <div class="data-card-title">البوتات ({{ bots | length }})</div>
+            <div class="data-card-subtitle">جميع البوتات المضافة في المنصة</div>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>البوت</th>
+                    <th>المالك</th>
+                    <th>المنصة</th>
+                    <th>المحادثات</th>
+                    <th>الذكاء الاصطناعي</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bot in bots %}
+                <tr>
+                    <td style="color:var(--text-muted);">#{{ bot.id }}</td>
+                    <td>
+                        <div style="font-weight:600;color:#fff;">{{ bot.name }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">{{ bot.description or 'لا يوجد وصف' }}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:500;color:#fff;">{{ bot.owner_name }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">{{ bot.owner_email }}</div>
+                    </td>
+                    <td>
+                        {% if bot.platform == 'telegram' %}
+                        <span class="badge" style="background:rgba(41,182,246,0.1);color:#4fc3f7;border:1px solid rgba(41,182,246,0.2);">✈️ تيليغرام</span>
+                        {% else %}
+                        <span class="badge badge-ghost">{{ bot.platform }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:600;color:#fff;">{{ bot.conv_count }}</td>
+                    <td>
+                        {% if bot.ai_enabled %}
+                        <span class="badge badge-active">🧠 مفعل</span>
+                        {% else %}
+                        <span class="badge badge-expired">معطل</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if bot.is_active %}
+                        <span class="badge badge-active">🟢 نشط</span>
+                        {% else %}
+                        <span class="badge badge-inactive">🔴 متوقف</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">{{ bot.created_at[:10] if bot.created_at else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">لا توجد بوتات حتى الآن</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

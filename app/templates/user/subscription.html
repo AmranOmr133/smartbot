@@ -1,0 +1,283 @@
+{% extends "user/layout.html" %}
+{% block title %}اشتراكي — SmartBot{% endblock %}
+{% block page_title %}اشتراكي{% endblock %}
+{% block page_sub %}إدارة باقة الاشتراك والدفع البنكي وتأكيد الإيصالات{% endblock %}
+
+{% block content %}
+<div style="max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:24px;">
+
+    <!-- Current Status Card -->
+    <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:26px 30px;background:{% if sub_info.status == 'active' %}linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.03)){% elif sub_info.status == 'trial' %}linear-gradient(135deg,rgba(14,165,233,0.15),rgba(14,165,233,0.03)){% else %}linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.03)){% endif %};border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                <div style="display:flex;align-items:center;gap:18px;">
+                    <div style="width:64px;height:64px;border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:var(--shadow);">
+                        {% if sub_info.status == 'active' %}✅
+                        {% elif sub_info.status == 'trial' %}🚀
+                        {% else %}⏳{% endif %}
+                    </div>
+                    <div>
+                        <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;">
+                            {% if sub_info.status == 'active' %}اشتراك سنوي نشط
+                            {% elif sub_info.status == 'trial' %}فترة تجريبية مجانية
+                            {% else %}الاشتراك منتهي الصلاحية{% endif %}
+                        </div>
+                        <div style="font-size:14px;color:var(--text2);">
+                            {% if sub_info.days_left > 0 %}
+                            متبقي في باقتك <strong style="color:var(--blue-dark);font-weight:800;">{{ sub_info.days_left }} يوم</strong>
+                            {% if sub_info.end_date %}
+                            (ينتهي في: {{ sub_info.end_date[:10] }})
+                            {% endif %}
+                            {% else %}
+                            يرجى تجديد الاشتراك للاستمرار في استخدام البوت
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    {% if sub_info.status == 'active' %}
+                    <span class="badge badge-active" style="font-size:13px;padding:6px 14px;">مفعل حتى سنة كاملة</span>
+                    {% elif sub_info.status == 'trial' %}
+                    <span class="badge badge-trial" style="font-size:13px;padding:6px 14px;">تجربة مجانية 10 أيام</span>
+                    {% else %}
+                    <span class="badge badge-inactive" style="font-size:13px;padding:6px 14px;">منتهي</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div style="padding:18px 30px;display:flex;gap:24px;font-size:13px;color:var(--text2);flex-wrap:wrap;background:#fff;">
+            <div><strong style="color:var(--text);">الخطة:</strong> {% if sub_info.status == 'trial' %}تجربة مجانية{% else %}سنوي - 50 ر.س{% endif %}</div>
+            <div><strong style="color:var(--text);">حد البوتات:</strong> بوت واحد لكل مستخدم (حسب ضوابط المنصة)</div>
+            <div><strong style="color:var(--text);">الدعم الفني:</strong> متاح 24/7 عبر الواتساب</div>
+        </div>
+    </div>
+
+    {% if pending_payment %}
+    <!-- Pending Payment Alert Box -->
+    <div class="card" style="padding:26px;border:1.5px solid #fcd34d;background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(245,158,11,0.01));">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+            <div style="width:48px;height:48px;border-radius:14px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">
+                ⏳
+            </div>
+            <div style="flex:1;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+                    <div style="font-size:17px;font-weight:800;color:#92400e;">طلب الدفع الخاص بك قيد المراجعة والمطابقة</div>
+                    <span class="badge badge-pending">قيد المراجعة</span>
+                </div>
+                <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">
+                    لقد أرسلت طلب دفع بقيمة <strong>{{ pending_payment.amount }} ر.س</strong> بتاريخ {{ pending_payment.created_at[:16] }} عبر ({{ pending_payment.payment_method }}).
+                    يقوم فريق الإدارة بمطابقة الإيصال وتفعيل حسابك خلال وقت قصير جداً.
+                </p>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:13px;background:#fff;padding:14px;border-radius:12px;border:1px solid rgba(245,158,11,0.2);">
+                    <div><span style="color:var(--muted);">طريقة الدفع:</span> <strong>{{ pending_payment.payment_method }}</strong></div>
+                    <div><span style="color:var(--muted);">رقم المرجع / الحوالة:</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">{{ pending_payment.transaction_ref or 'غير محدد' }}</code></div>
+                </div>
+
+                {% if pending_payment.screenshot_path %}
+                <div style="margin-top:16px;padding-top:14px;border-top:1px dashed rgba(245,158,11,0.3);">
+                    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">📸 صورة إيصال التحويل المرفوعة:</div>
+                    <div style="display:inline-block;position:relative;cursor:pointer;" onclick="openReceiptViewer('{{ pending_payment.screenshot_path }}')">
+                        <img src="{{ pending_payment.screenshot_path }}" style="max-height:140px;border-radius:12px;border:1.5px solid var(--border);box-shadow:var(--shadow);" alt="إيصال التحويل">
+                        <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;">🔍 انقر للتكبير</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Payment & Upgrade Form -->
+    <div class="card" style="padding:32px;">
+        <div style="margin-bottom:24px;">
+            <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">
+                {% if sub_info.status == 'active' %}تجديد أو ترقية الاشتراك{% else %}الاشتراك في الباقة السنوية{% endif %}
+            </div>
+            <div style="font-size:14px;color:var(--text2);">
+                احصل على وصول كامل وغير محدود لجميع ميزات الذكاء الاصطناعي وبوت التلجرام طوال العام.
+            </div>
+        </div>
+
+        <!-- Pricing Banner -->
+        <div style="background:linear-gradient(135deg,rgba(14,165,233,0.12),rgba(14,165,233,0.03));border:1.5px solid rgba(14,165,233,0.25);border-radius:18px;padding:24px;margin-bottom:26px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+            <div>
+                <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:4px;">الباقة السنوية الشاملة</div>
+                <div style="font-size:38px;font-weight:900;color:var(--text);font-family:'Sora',sans-serif;">
+                    50 <span style="font-size:18px;font-weight:600;color:var(--text2);">ريال سعودي / سنة</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">شامل المحادثات غير المحدودة، والتدريب، والدعم الفني</div>
+            </div>
+            <div style="background:#fff;padding:12px 18px;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:center;">
+                <div style="font-size:11px;color:var(--muted);">المدة</div>
+                <div style="font-size:16px;font-weight:800;color:var(--blue-dark);">365 يوم</div>
+            </div>
+        </div>
+
+        <!-- Payment Channels Info -->
+        <div style="margin-bottom:24px;">
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;">🏦 بيانات التحويل البنكي والدفع:</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;">
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📱 تحويل عبر الواتساب / STC Pay</div>
+                    <a href="https://wa.me/{{ payment_whatsapp.replace('+','').replace(' ','') }}" target="_blank" style="color:#25d366;font-weight:700;text-decoration:none;font-size:15px;direction:ltr;display:inline-block;">
+                        {{ payment_whatsapp }}
+                    </a>
+                </div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;">
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">✉️ استفسارات المدفوعات</div>
+                    <div style="font-weight:700;color:var(--text);font-size:14px;">{{ payment_email }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Submission Form -->
+        <form id="paymentForm" onsubmit="submitPayment(event)" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">طريقة الدفع المستخدمة <span style="color:var(--danger);">*</span></label>
+                <select name="payment_method" class="form-input" required>
+                    <option value="">-- اختر طريقة الدفع --</option>
+                    {% for method in payment_methods %}
+                    <option value="{{ method }}">{{ method }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">رقم المرجع / الحوالة البنكية</label>
+                <input type="text" name="transaction_ref" class="form-input" placeholder="مثال: 987654321">
+            </div>
+
+            <!-- Receipt Upload Zone with < 2MB Limit -->
+            <div class="form-group">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <label class="form-label" style="margin-bottom:0;">📸 صورة إيصال التحويل (مستحسن لتسريع التفعيل)</label>
+                    <span style="font-size:11px;color:#0ea5e9;background:#e0f2fe;padding:2px 8px;border-radius:6px;font-weight:700;">
+                        أقصى حجم: 2 ميغابايت
+                    </span>
+                </div>
+
+                <div id="dropZone" style="border:2px dashed var(--border);border-radius:14px;padding:24px 20px;text-align:center;background:var(--bg);cursor:pointer;transition:all 0.2s;" onclick="document.getElementById('receiptInput').click()">
+                    <input type="file" name="receipt" id="receiptInput" accept="image/jpeg,image/png,image/jpg,image/webp" style="display:none;" onchange="handleReceiptFile(this)">
+                    <div id="dropPrompt">
+                        <div style="font-size:32px;margin-bottom:8px;">📤</div>
+                        <div style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:4px;">انقر هنا لاختيار صورة الإيصال من جهازك</div>
+                        <div style="font-size:12px;color:var(--muted);">الصيغ المدعومة: JPG, PNG, WebP — الحجم أقل من 2MB</div>
+                    </div>
+
+                    <!-- Live Image Preview Container -->
+                    <div id="previewContainer" style="display:none;margin-top:10px;">
+                        <div style="position:relative;display:inline-block;">
+                            <img id="receiptPreviewImg" src="" style="max-height:180px;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow);" alt="معاينة الإيصال">
+                            <button type="button" onclick="removeReceiptFile(event)" style="position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:none;width:26px;height:26px;border-radius:50%;cursor:pointer;font-weight:bold;font-size:14px;">✕</button>
+                        </div>
+                        <div id="fileInfo" style="font-size:12px;color:var(--text2);margin-top:6px;font-weight:600;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">ملاحظات إضافية (اختياري)</label>
+                <textarea name="notes" class="form-input" rows="2" placeholder="أي تفاصيل أخرى مثل اسم المحول أو البنك..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:15px;font-size:16px;">
+                💳 إرسال طلب الدفع والإيصال
+            </button>
+            <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px;">
+                🔒 عملية دفع آمنة. تتم مراجعة ومطابقة الإيصالات وتفعيل الاشتراك فوراً من لوحة الإدارة.
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Receipt Modal Viewer -->
+<div class="modal-overlay" id="receiptZoomModal" onclick="closeReceiptViewer()">
+    <div style="max-width:90vw;max-height:90vh;position:relative;" onclick="event.stopPropagation()">
+        <img id="zoomReceiptImg" src="" style="max-width:100%;max-height:85vh;border-radius:14px;box-shadow:0 25px 60px rgba(0,0,0,0.8);" alt="إيصال التحويل">
+        <button onclick="closeReceiptViewer()" style="position:absolute;top:-14px;right:-14px;background:#ef4444;color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-weight:bold;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+
+function handleReceiptFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Validate size (< 2MB)
+    if (file.size > MAX_SIZE_BYTES) {
+        showToast('⚠️ حجم الصورة كبير (' + (file.size / (1024*1024)).toFixed(2) + ' MB). الحد الأقصى المسموح به هو 2 ميغابايت.', 'err');
+        input.value = '';
+        removeReceiptFile(null);
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('receiptPreviewImg').src = e.target.result;
+        document.getElementById('fileInfo').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        document.getElementById('dropPrompt').style.display = 'none';
+        document.getElementById('previewContainer').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeReceiptFile(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('receiptInput').value = '';
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('dropPrompt').style.display = 'block';
+}
+
+function openReceiptViewer(src) {
+    document.getElementById('zoomReceiptImg').src = src;
+    document.getElementById('receiptZoomModal').classList.add('show');
+}
+
+function closeReceiptViewer() {
+    document.getElementById('receiptZoomModal').classList.remove('show');
+}
+
+async function submitPayment(e) {
+    e.preventDefault();
+    const form = e.target;
+    const fileInput = document.getElementById('receiptInput');
+
+    // Final check for file size
+    if (fileInput.files.length > 0 && fileInput.files[0].size > MAX_SIZE_BYTES) {
+        showToast('⚠️ حجم صورة الإيصال يجب أن يكون أقل من 2 ميغابايت', 'err');
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ جاري إرسال الطلب ورفع الإيصال...';
+
+    const data = new FormData(form);
+    try {
+        const res = await fetch('/subscription/pay', { method: 'POST', body: data });
+        const json = await res.json();
+        if (json.success) {
+            showToast(json.message || 'تم إرسال طلب الدفع والإيصال بنجاح ✅', 'ok');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(json.error || 'حدث خطأ أثناء الإرسال', 'err');
+            btn.disabled = false;
+            btn.textContent = '💳 إرسال طلب الدفع والإيصال';
+        }
+    } catch (err) {
+        showToast('تعذر الاتصال بالخادم', 'err');
+        btn.disabled = false;
+        btn.textContent = '💳 إرسال طلب الدفع والإيصال';
+    }
+}
+</script>
+{% endblock %}

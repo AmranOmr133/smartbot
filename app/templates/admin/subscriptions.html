@@ -1,0 +1,66 @@
+{% extends "admin/layout.html" %}
+{% block title %}الاشتراكات - SmartBot Admin{% endblock %}
+{% block page_title %}إدارة الاشتراكات{% endblock %}
+{% block page_breadcrumb %}عرض حالة اشتراكات المستخدمين{% endblock %}
+
+{% block content %}
+<div class="data-card">
+    <div class="data-card-header">
+        <div>
+            <div class="data-card-title">الاشتراكات ({{ subscriptions | length }})</div>
+            <div class="data-card-subtitle">حالة اشتراكات جميع المستخدمين</div>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th>النوع</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الانتهاء</th>
+                    <th>آخر تحديث</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subscriptions %}
+                <tr>
+                    <td>
+                        <div style="font-weight:600;color:#fff;">{{ sub.full_name }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">{{ sub.email }}</div>
+                    </td>
+                    <td>
+                        {% if sub.plan == 'annual' %}
+                        <span class="badge badge-active">🏆 سنوي</span>
+                        {% else %}
+                        <span class="badge badge-trial">🔮 تجربة</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if sub.status == 'active' %}
+                        <span class="badge badge-active">✅ نشط</span>
+                        {% elif sub.status == 'trial' %}
+                        <span class="badge badge-trial">⏳ تجربة</span>
+                        {% else %}
+                        <span class="badge badge-inactive">❌ منتهي</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:13px;">
+                        {% if sub.subscription_end %}
+                        {{ sub.subscription_end[:10] }}
+                        {% elif sub.trial_end %}
+                        {{ sub.trial_end[:10] }} (تجربة)
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">{{ sub.updated_at[:10] if sub.updated_at else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">لا توجد اشتراكات</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "user/layout.html" %}
+{% block title %}بوت جديد - SmartBot{% endblock %}
+{% block page_title %}إضافة بوت جديد{% endblock %}
+{% block page_sub %}ربط بوت تيليغرام جديد{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+
+    <!-- Guide Banner -->
+    <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:18px 20px;margin-bottom:24px;">
+        <div style="font-weight:700;color:#c4b5fd;margin-bottom:10px;">📋 خطوات الحصول على توكن البوت</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);">
+                <span style="background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span>
+                افتح تيليغرام وابحث عن <strong>@BotFather</strong>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);">
+                <span style="background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span>
+                أرسل الأمر <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">/newbot</code> واتبع التعليمات
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);">
+                <span style="background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span>
+                انسخ التوكن وضعه أدناه
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="card" style="padding:28px;">
+        <div style="margin-bottom:24px;">
+            <div style="font-size:18px;font-weight:700;margin-bottom:4px;">إعداد البوت</div>
+            <div style="font-size:13px;color:var(--muted);">أدخل معلومات البوت وسيتم التحقق منها تلقائياً</div>
+        </div>
+
+        {% if error %}
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:12px 14px;color:#fca5a5;font-size:13px;margin-bottom:18px;">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <form action="/bots/new" method="POST">
+            <div class="form-group">
+                <label class="form-label">توكن البوت (من BotFather) *</label>
+                <input type="text" name="token" class="form-input" 
+                       placeholder="123456789:ABCDefGhIJKlmNoPQRsTUVwxyZ" 
+                       required dir="ltr" style="text-align:left;" autocomplete="off">
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">يبدأ عادةً بأرقام متبوعة بنقطتين وحروف</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">اسم البوت *</label>
+                <input type="text" name="name" class="form-input" placeholder="مثال: بوت خدمة العملاء" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">وصف البوت</label>
+                <input type="text" name="description" class="form-input" placeholder="مثال: بوت للإجابة على استفسارات العملاء">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">رسالة الترحيب</label>
+                <textarea name="welcome_message" class="form-input" rows="2" 
+                          placeholder="مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك؟"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">تعليمات الذكاء الاصطناعي (اختياري)</label>
+                <textarea name="system_prompt" class="form-input" rows="3" 
+                          placeholder="مثال: أنت مساعد لشركة XYZ، تجيب باللغة العربية فقط، وتساعد في استفسارات المنتجات..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">لغة الردود</label>
+                <select name="language" class="form-input">
+                    <option value="ar">🇸🇦 عربي</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="both">🌍 عربي + إنجليزي</option>
+                </select>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:24px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;">✅ إضافة البوت</button>
+                <a href="/bots" class="btn btn-ghost">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

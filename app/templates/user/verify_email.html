@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="{{ 'ar' if lang != 'en' else 'en' }}" dir="{{ 'rtl' if lang != 'en' else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if lang != 'en' %}تأكيد البريد الإلكتروني - SmartBot{% else %}Verify Email - SmartBot{% endif %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #06060d;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            right: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .lang-switch {
+            position: absolute;
+            top: 24px;
+            {% if lang != 'en' %}left: 24px;{% else %}right: 24px;{% endif %}
+            z-index: 10;
+        }
+
+        .lang-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #cbd5e1;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            background: rgba(99,102,241,0.2);
+            color: #fff;
+            border-color: #6366f1;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 460px;
+            background: rgba(15,15,24,0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 40px 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .icon-circle {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+            border: 1px solid rgba(99,102,241,0.35);
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 24px rgba(99,102,241,0.2);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .desc {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.6;
+            margin-bottom: 6px;
+        }
+
+        .email-pill {
+            display: inline-block;
+            background: rgba(99,102,241,0.12);
+            border: 1px solid rgba(99,102,241,0.25);
+            color: #a5b4fc;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            direction: ltr;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: {{ 'right' if lang != 'en' else 'left' }};
+        }
+
+        .alert-error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #6ee7b7;
+        }
+
+        .alert-info {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.3);
+            color: #93c5fd;
+        }
+
+        .otp-input-container {
+            margin-bottom: 24px;
+        }
+
+        .otp-input {
+            width: 100%;
+            height: 60px;
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: 12px;
+            outline: none;
+            transition: all 0.25s;
+        }
+
+        .otp-input:focus {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.08);
+            box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(99,102,241,0.4);
+        }
+
+        .resend-box {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .resend-btn {
+            background: none;
+            border: none;
+            color: #a5b4fc;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .resend-btn:hover { color: #fff; }
+        .resend-btn:disabled { color: rgba(255,255,255,0.3); cursor: not-allowed; text-decoration: none; }
+
+        .back-link {
+            display: block;
+            margin-top: 16px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <!-- Language switcher -->
+    <div class="lang-switch">
+        {% if lang != 'en' %}
+        <a href="/verify-email?email={{ email }}&lang=en" class="lang-btn">🌐 English</a>
+        {% else %}
+        <a href="/verify-email?email={{ email }}&lang=ar" class="lang-btn">🌐 العربية</a>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="icon-circle">📩</div>
+
+        {% if lang != 'en' %}
+        <h1>تأكيد البريد الإلكتروني</h1>
+        <p class="desc">أرسلنا رمز تحقق رقمي مكون من 6 أرقام إلى بريدك:</p>
+        {% else %}
+        <h1>Verify Your Email</h1>
+        <p class="desc">We have sent a 6-digit verification code to:</p>
+        {% endif %}
+
+        <div class="email-pill">{{ email }}</div>
+
+        {% if is_unverified_notice %}
+        <div class="alert alert-info">
+            {% if lang != 'en' %}
+            ℹ️ يرجى تأكيد بريدك الإلكتروني أولاً لتتمكن من الدخول واستخدام المنصة.
+            {% else %}
+            ℹ️ Please verify your email address to access your account and dashboard.
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-error">⚠️ {{ error }}</div>
+        {% endif %}
+
+        {% if msg %}
+        <div class="alert alert-success">✅ {{ msg }}</div>
+        {% endif %}
+
+        <form action="/verify-email" method="POST">
+            <input type="hidden" name="email" value="{{ email }}">
+            <input type="hidden" name="lang" value="{{ lang }}">
+
+            <div class="otp-input-container">
+                <input type="text"
+                       name="code"
+                       class="otp-input"
+                       placeholder="••••••"
+                       maxlength="6"
+                       pattern="[0-9]*"
+                       inputmode="numeric"
+                       autocomplete="one-time-code"
+                       required
+                       autofocus>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                {% if lang != 'en' %}تأكيد الحساب والبدء 🚀{% else %}Verify & Get Started 🚀{% endif %}
+            </button>
+        </form>
+
+        <div class="resend-box">
+            <span>{% if lang != 'en' %}لم يصلك الرمز؟{% else %}Didn't receive the code?{% endif %}</span>
+            <form action="/resend-code" method="POST" style="display:inline;" onsubmit="handleResend(event)">
+                <input type="hidden" name="email" value="{{ email }}">
+                <input type="hidden" name="code_type" value="register">
+                <input type="hidden" name="lang" value="{{ lang }}">
+                <button type="submit" id="resendBtn" class="resend-btn">
+                    {% if lang != 'en' %}إعادة إرسال{% else %}Resend Code{% endif %}
+                </button>
+            </form>
+            <span id="timerSpan" style="display:none;color:#f59e0b;font-weight:600;"></span>
+        </div>
+
+        <a href="/register" class="back-link">
+            {% if lang != 'en' %}← العودة لتعديل البريد الإلكتروني{% else %}← Change email address{% endif %}
+        </a>
+    </div>
+
+    <script>
+        // 60-second cooldown timer for resend button
+        let countdown = 60;
+        const btn = document.getElementById('resendBtn');
+        const timer = document.getElementById('timerSpan');
+
+        function startTimer() {
+            btn.disabled = true;
+            timer.style.display = 'inline';
+            countdown = 60;
+            const interval = setInterval(() => {
+                countdown--;
+                timer.textContent = `(${countdown}s)`;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    timer.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        async function handleResend(e) {
+            e.preventDefault();
+            btn.disabled = true;
+            const formData = new FormData(e.target);
+            try {
+                const res = await fetch('/resend-code', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                alert(data.message || '{% if lang != "en" %}تم إرسال رمز جديد بنجاح!{% else %}New code sent successfully!{% endif %}');
+                startTimer();
+            } catch (err) {
+                e.target.submit();
+            }
+        }
+    </script>
+</body>
+</html>

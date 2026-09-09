@@ -1,0 +1,90 @@
+{% extends "user/layout.html" %}
+{% block title %}بوتاتي - SmartBot{% endblock %}
+{% block page_title %}بوتاتي{% endblock %}
+{% block page_sub %}إدارة بوتات التليغرام{% endblock %}
+{% block topbar_actions %}
+<a href="/bots/new" class="btn btn-primary btn-sm">+ بوت جديد</a>
+{% endblock %}
+
+{% block content %}
+{% if not has_subscription %}
+<div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:14px;padding:16px 20px;margin-bottom:22px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;">🔒</span>
+    <div>
+        <div style="font-weight:700;color:#c4b5fd;">يلزم اشتراك فعال لإضافة بوتات</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;">اشترك بـ 50 ريال سنوياً أو استمر في التجربة المجانية</div>
+    </div>
+    <a href="/subscription" class="btn btn-primary btn-sm" style="margin-right:auto;white-space:nowrap;">عرض الاشتراك</a>
+</div>
+{% endif %}
+
+{% if bots %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+    {% for bot in bots %}
+    <div class="card" style="padding:0;overflow:hidden;transition:all 0.3s;" onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.4)'" onmouseleave="this.style.transform='';this.style.boxShadow=''">
+        <!-- Bot Header -->
+        <div style="padding:18px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">✈️</div>
+            <div style="flex:1;overflow:hidden;">
+                <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ bot.name }}</div>
+                <div style="font-size:11px;color:var(--muted);">Telegram Bot</div>
+            </div>
+            <div>
+                {% if bot.is_active %}
+                <span class="badge badge-active">🟢</span>
+                {% else %}
+                <span class="badge badge-inactive">🔴</span>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Stats -->
+        <div style="padding:12px 18px;display:flex;gap:20px;">
+            <div style="text-align:center;">
+                <div style="font-size:18px;font-weight:700;">{{ bot.conv_count }}</div>
+                <div style="font-size:10px;color:var(--muted);">محادثة</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:18px;font-weight:700;">{{ bot.kb_count }}</div>
+                <div style="font-size:10px;color:var(--muted);">معلومة</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:18px;font-weight:700;">{% if bot.ai_enabled %}🧠{% else %}❌{% endif %}</div>
+                <div style="font-size:10px;color:var(--muted);">الذكاء الاصطناعي</div>
+            </div>
+        </div>
+        <!-- Actions -->
+        <div style="padding:0 18px 16px;display:flex;gap:8px;">
+            <a href="/bots/{{ bot.id }}" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">⚙️ إدارة</a>
+            <button class="btn btn-sm {% if bot.is_active %}btn-danger{% else %}btn-success{% endif %}"
+                    onclick="toggleBot({{ bot.id }}, {{ bot.is_active }}, this)"
+                    style="flex:1;">
+                {% if bot.is_active %}⏸ إيقاف{% else %}▶️ تشغيل{% endif %}
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="padding:60px;text-align:center;">
+    <div style="font-size:60px;margin-bottom:16px;">🤖</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:8px;">أضف أول بوت تليغرام</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.6;">
+        احصل على توكن من @BotFather في تيليغرام وأضفه هنا لبدء تشغيل مساعدك الذكي
+    </div>
+    <a href="/bots/new" class="btn btn-primary">🚀 إضافة بوت جديد</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function toggleBot(id, isActive, btn) {
+    const res = await api(`/bots/${id}/toggle`);
+    if (res.success) {
+        location.reload();
+    } else {
+        showToast('حدث خطأ', 'err');
+    }
+}
+</script>
+{% endblock %}
