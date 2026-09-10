@@ -1,170 +1,430 @@
 """
-Admin Auth Router - SmartBot
+SmartBot Platform - Main Application
+FastAPI + aiosqlite | Dual auth system (Admin + User)
 """
 
-from fastapi import APIRouter, Depends, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+import sys
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from datetime import timedelta
-import aiosqlite
 
-from app.core.database import get_db
-from app.core.security import verify_password, create_access_token
 from app.core.config import settings
+from app.core.database import init_db
+from app.services.telegram_service import telegram_polling_manager
 
 
-router = APIRouter()
+# ─────────────────────────────────────────────────────────
+# UTF-8 Console Encoding
+# ─────────────────────────────────────────────────────────
 
-templates = Jinja2Templates(directory="app/templates")
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 
-# =========================================================
-# Admin Login Page
-# =========================================================
+# ─────────────────────────────────────────────────────────
+# Routers
+# ─────────────────────────────────────────────────────────
 
-@router.get("/login", response_class=HTMLResponse)
-async def admin_login_page(request: Request):
+from app.routers.admin import auth as admin_auth
+from app.routers.admin import dashboard as admin_dashboard
 
-    # Check if admin is already logged in
-    token = request.cookies.get("admin_token")
+from app.routers.user import auth as user_auth
+from app.routers.user import dashboard as user_dashboard
+from app.routers.user import bots as user_bots
+from app.routers.user import subscription as user_subscription
 
-    if token:
-        from app.core.security import decode_token
+from app.routers import webhook
 
-        payload = decode_token(token)
 
-        if payload and payload.get("type") == "admin":
-            return RedirectResponse(
-                url="/admin/dashboard",
-                status_code=302
-            )
+# ─────────────────────────────────────────────────────────
+# Application Lifespan
+# ─────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """App startup/shutdown lifecycle."""
+
+    print(f"[*] Starting {settings.APP_NAME}...")
+
+    # Initialize database
+    await init_db()
+
+    # Start Telegram polling service
+    telegram_polling_manager.start()
+
+    print(f"[OK] {settings.APP_NAME} is ready!")
+    print(f"   -> Admin Panel: {settings.APP_URL}/admin/login")
+    print(f"   -> User App:    {settings.APP_URL}/login")
+
+    yield
+
+    # Shutdown
+    print(f"[*] {settings.APP_NAME} shutting down...")
+
+    await telegram_polling_manager.stop()
+
+
+# ─────────────────────────────────────────────────────────
+# FastAPI Application
+# ─────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    description="AI-powered Telegram Bot Management Platform",
+    version="2.0.0",
+    docs_url="/api/docs" if settings.DEBUG else None,
+    redoc_url=None,
+    lifespan=lifespan,
+)
+
+
+# ─────────────────────────────────────────────────────────
+# Static Files
+# ─────────────────────────────────────────────────────────
+
+static_dir = os.path.join(
+    os.path.dirname(__file__),
+    "static"
+)
+
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir, exist_ok=True)
+
+app.mount(
+    "/static",
+    StaticFiles(directory=static_dir),
+    name="static"
+)
+
+
+# ─────────────────────────────────────────────────────────
+# Jinja2 Templates
+# ─────────────────────────────────────────────────────────
+
+templates = Jinja2Templates(
+    directory="app/templates"
+)
+
+
+# ─────────────────────────────────────────────────────────
+# Admin Routes
+# ─────────────────────────────────────────────────────────
+
+app.include_router(
+    admin_auth.router,
+    prefix="/admin",
+    tags=["Admin Auth"]
+)
+
+app.include_router(
+    admin_dashboard.router,
+    prefix="/admin",
+    tags=["Admin Dashboard"]
+)
+
+
+# ─────────────────────────────────────────────────────────
+# User Authentication Routes
+# ─────────────────────────────────────────────────────────
+
+app.include_router(
+    user_auth.router,
+    tags=["User Auth"]
+)
+
+
+# ─────────────────────────────────────────────────────────
+# User Application Routes
+# ─────────────────────────────────────────────────────────
+
+app.include_router(
+    user_dashboard.router,
+    tags=["User Dashboard"]
+)
+
+app.include_router(
+    user_bots.router,
+    tags=["User Bots"]
+)
+
+app.include_router(
+    user_subscription.router,
+    tags=["User Subscription"]
+)
+
+
+# ─────────────────────────────────────────────────────────
+# Webhook Routes
+# ─────────────────────────────────────────────────────────
+
+app.include_router(
+    webhook.router,
+    prefix="/webhook",
+    tags=["Webhooks"]
+)
+
+
+# ─────────────────────────────────────────────────────────
+# Maintenance Mode Middleware
+# ─────────────────────────────────────────────────────────
+
+@app.middleware("http")
+async def maintenance_middleware(
+    request: Request,
+    call_next
+):
+    path = request.url.path
+
+    # Allow these routes during maintenance
+    if (
+        path.startswith("/admin")
+        or path.startswith("/static")
+        or path.startswith("/webhook")
+        or path.startswith("/api/docs")
+    ):
+        return await call_next(request)
+
+    try:
+        import aiosqlite
+        from app.core.database import DB_PATH
+
+        async with aiosqlite.connect(DB_PATH) as db:
+
+            db.row_factory = aiosqlite.Row
+
+            async with db.execute(
+                """
+                SELECT value
+                FROM platform_settings
+                WHERE key = 'maintenance_mode'
+                """
+            ) as cursor:
+
+                row = await cursor.fetchone()
+
+                if row and row["value"] == "1":
+
+                    return templates.TemplateResponse(
+                        request=request,
+                        name="maintenance.html",
+                        status_code=503
+                    )
+
+    except Exception:
+        # Don't stop the application if maintenance
+        # mode checking fails.
+        pass
+
+    return await call_next(request)
+
+
+# ─────────────────────────────────────────────────────────
+# Landing Page
+# ─────────────────────────────────────────────────────────
+
+@app.get(
+    "/",
+    response_class=HTMLResponse
+)
+async def root(request: Request):
 
     return templates.TemplateResponse(
         request=request,
-        name="admin/login.html"
+        name="public/index.html"
     )
 
 
-# =========================================================
-# Admin Login
-# =========================================================
+# ─────────────────────────────────────────────────────────
+# Admin Root Redirect
+# ─────────────────────────────────────────────────────────
 
-@router.post("/login")
-async def admin_login(
+@app.get(
+    "/admin",
+    response_class=RedirectResponse
+)
+async def admin_root():
+
+    return RedirectResponse(
+        "/admin/login",
+        status_code=302
+    )
+
+
+# ─────────────────────────────────────────────────────────
+# Health Check
+# ─────────────────────────────────────────────────────────
+
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint for monitoring services
+    such as UptimeRobot.
+    """
+
+    return {
+        "status": "ok",
+        "app": "SmartBot",
+        "environment": settings.ENVIRONMENT
+    }
+
+
+# ─────────────────────────────────────────────────────────
+# 404 Handler
+# ─────────────────────────────────────────────────────────
+
+@app.exception_handler(404)
+async def not_found(
     request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    db: aiosqlite.Connection = Depends(get_db)
+    exc
 ):
 
-    # Find admin
-    async with db.execute(
+    return HTMLResponse(
         """
-        SELECT *
-        FROM admins
-        WHERE username = ?
-        AND is_active = 1
+        <!DOCTYPE html>
+
+        <html lang="ar" dir="rtl">
+
+        <head>
+
+            <meta charset="UTF-8">
+
+            <meta
+                name="viewport"
+                content="width=device-width, initial-scale=1.0"
+            >
+
+            <title>404 - SmartBot</title>
+
+            <link
+                href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap"
+                rel="stylesheet"
+            >
+
+            <style>
+
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+
+                body {
+                    font-family: Tajawal, sans-serif;
+                    background: #07070e;
+                    color: #fff;
+                    min-height: 100vh;
+
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    text-align: center;
+                }
+
+                .c {
+                    padding: 40px;
+                }
+
+                .emoji {
+                    font-size: 80px;
+                    margin-bottom: 20px;
+                }
+
+                .title {
+                    font-size: 28px;
+                    font-weight: 700;
+                    margin-bottom: 8px;
+                }
+
+                .sub {
+                    color: rgba(255, 255, 255, 0.5);
+                    margin-bottom: 24px;
+                }
+
+                a {
+                    display: inline-block;
+                    padding: 12px 24px;
+
+                    background:
+                        linear-gradient(
+                            135deg,
+                            #6366f1,
+                            #8b5cf6
+                        );
+
+                    border-radius: 12px;
+
+                    color: #fff;
+                    text-decoration: none;
+
+                    font-weight: 600;
+                }
+
+                a:hover {
+                    opacity: 0.9;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <div class="c">
+
+                <div class="emoji">
+                    🤖
+                </div>
+
+                <div class="title">
+                    404 — الصفحة غير موجودة
+                </div>
+
+                <div class="sub">
+                    يبدو أنك ضللت الطريق!
+                </div>
+
+                <a href="/">
+                    العودة للرئيسية
+                </a>
+
+            </div>
+
+        </body>
+
+        </html>
         """,
-        (username,)
-    ) as cursor:
-
-        admin = await cursor.fetchone()
-
-
-    # Invalid credentials
-    if not admin or not verify_password(
-        password,
-        admin["password_hash"]
-    ):
-
-        return templates.TemplateResponse(
-            request=request,
-            name="admin/login.html",
-            context={
-                "error": "اسم المستخدم أو كلمة المرور غير صحيحة"
-            },
-            status_code=400
-        )
-
-
-    # =====================================================
-    # Update Last Login
-    # =====================================================
-
-    await db.execute(
-        """
-        UPDATE admins
-        SET last_login = datetime('now')
-        WHERE id = ?
-        """,
-        (admin["id"],)
+        status_code=404
     )
 
-    await db.commit()
 
+# ─────────────────────────────────────────────────────────
+# Local Development
+# ─────────────────────────────────────────────────────────
 
-    # =====================================================
-    # Create JWT Token
-    # =====================================================
+if __name__ == "__main__":
 
-    token = create_access_token(
-        data={
-            "sub": str(admin["id"]),
-            "type": "admin",
-            "username": admin["username"]
-        },
-        expires_delta=timedelta(
-            minutes=settings.ADMIN_TOKEN_EXPIRE_MINUTES
+    import uvicorn
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            8000
         )
     )
 
-
-    # =====================================================
-    # Redirect To Dashboard
-    # =====================================================
-
-    response = RedirectResponse(
-        url="/admin/dashboard",
-        status_code=302
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=settings.DEBUG,
+        log_level="info"
     )
-
-
-    # Admin token
-    response.set_cookie(
-        key="admin_token",
-        value=token,
-        httponly=True,
-        max_age=settings.ADMIN_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax"
-    )
-
-
-    # Shared access token
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        max_age=settings.ADMIN_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax"
-    )
-
-
-    return response
-
-
-# =========================================================
-# Admin Logout
-# =========================================================
-
-@router.get("/logout")
-async def admin_logout():
-
-    response = RedirectResponse(
-        url="/admin/login",
-        status_code=302
-    )
-
-    response.delete_cookie("admin_token")
-    response.delete_cookie("access_token")
-
-    return response
