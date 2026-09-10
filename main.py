@@ -101,7 +101,7 @@ async def maintenance_middleware(request: Request, call_next):
             async with db.execute("SELECT value FROM platform_settings WHERE key = 'maintenance_mode'") as c:
                 row = await c.fetchone()
                 if row and row["value"] == "1":
-                    return templates.TemplateResponse("maintenance.html", {"request": request}, status_code=503)
+                    return templates.TemplateResponse(request=request,name="maintenance.html",status_code=503)
     except Exception:
         pass
 
@@ -111,7 +111,7 @@ async def maintenance_middleware(request: Request, call_next):
 # ── Landing Page & Redirects ──────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    return templates.TemplateResponse("public/index.html", {"request": request})
+    return templates.TemplateResponse(request=request,name="public/index.html")
 
 
 @app.get("/admin", response_class=RedirectResponse)
