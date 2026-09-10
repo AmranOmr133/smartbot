@@ -1,4 +1,3 @@
-```python
 """
 User Auth Router - Register, Login, Logout, Email OTP Verification & Password Reset
 """
@@ -1385,4 +1384,3 @@ async def logout():
     response.delete_cookie("access_token")
 
     return response
-```
