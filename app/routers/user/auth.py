@@ -6,11 +6,18 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
 import aiosqlite
+import secrets
+import httpx
 
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, decode_token
 from app.core.config import settings
 from app.services.email_service import generate_otp, send_verification_email
+
+# ─── Google OAuth Constants ───────────────────────────────────
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -428,6 +435,147 @@ async def reset_password_submit(
     await db.commit()
 
     return RedirectResponse(f"/login?reset=success&lang={lang}", status_code=302)
+
+
+# ─── Google OAuth 2.0 ────────────────────────────────────────
+
+@router.get("/auth/google")
+async def google_login(request: Request, lang: str = "ar"):
+    """Redirect user to Google OAuth consent screen."""
+    if not settings.GOOGLE_CLIENT_ID:
+        return RedirectResponse(f"/login?lang={lang}&error=google_not_configured", status_code=302)
+
+    state = secrets.token_urlsafe(16)
+    redirect_uri = f"{settings.APP_URL}/auth/google/callback"
+
+    # Build Google OAuth URL
+    params = (
+        f"?client_id={settings.GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={redirect_uri}"
+        f"&response_type=code"
+        f"&scope=openid%20email%20profile"
+        f"&state={state}"
+        f"&access_type=offline"
+        f"&prompt=select_account"
+    )
+    google_url = GOOGLE_AUTH_URL + params
+
+    response = RedirectResponse(google_url, status_code=302)
+    # Store state + lang in cookie for CSRF check
+    response.set_cookie("oauth_state", state, max_age=600, httponly=True, samesite="lax")
+    response.set_cookie("oauth_lang", lang, max_age=600, httponly=True, samesite="lax")
+    return response
+
+
+@router.get("/auth/google/callback")
+async def google_callback(
+    request: Request,
+    code: str = "",
+    state: str = "",
+    error: str = "",
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """Handle Google OAuth callback, create or login user."""
+    lang = request.cookies.get("oauth_lang", "ar")
+    stored_state = request.cookies.get("oauth_state", "")
+
+    # CSRF check
+    if not state or state != stored_state:
+        return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+    if error or not code:
+        return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+        return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+    redirect_uri = f"{settings.APP_URL}/auth/google/callback"
+
+    # Exchange code for token
+    async with httpx.AsyncClient() as client:
+        token_resp = await client.post(GOOGLE_TOKEN_URL, data={
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        })
+
+        if token_resp.status_code != 200:
+            return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+        token_data = token_resp.json()
+        access_token_google = token_data.get("access_token")
+
+        if not access_token_google:
+            return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+        # Fetch user info
+        userinfo_resp = await client.get(
+            GOOGLE_USERINFO_URL,
+            headers={"Authorization": f"Bearer {access_token_google}"}
+        )
+        if userinfo_resp.status_code != 200:
+            return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+        userinfo = userinfo_resp.json()
+
+    google_email = (userinfo.get("email") or "").lower().strip()
+    google_name = userinfo.get("name") or google_email.split("@")[0]
+    google_id = userinfo.get("sub") or ""
+
+    if not google_email:
+        return RedirectResponse(f"/login?lang={lang}", status_code=302)
+
+    # Look up existing user
+    async with db.execute("SELECT * FROM users WHERE email = ?", (google_email,)) as c:
+        existing = await c.fetchone()
+
+    if existing:
+        user_id = existing["id"]
+        # Check suspension
+        if existing["is_suspended"]:
+            return RedirectResponse(f"/login?lang={lang}", status_code=302)
+        # Mark verified if not already
+        if not existing["is_verified"]:
+            await db.execute("UPDATE users SET is_verified = 1 WHERE id = ?", (user_id,))
+        await db.execute("UPDATE users SET last_login = datetime('now') WHERE id = ?", (user_id,))
+        await db.commit()
+    else:
+        # Create new verified user (Google accounts are already verified)
+        cursor = await db.execute("""
+            INSERT INTO users (email, password_hash, full_name, is_verified, is_active)
+            VALUES (?, '', ?, 1, 1)
+        """, (google_email, google_name))
+        user_id = cursor.lastrowid
+
+        # Create 10-day trial subscription
+        trial_start = datetime.utcnow()
+        trial_end = trial_start + timedelta(days=settings.TRIAL_DAYS)
+        await db.execute("""
+            INSERT INTO subscriptions (user_id, plan, status, trial_start, trial_end)
+            VALUES (?, 'trial', 'trial', ?, ?)
+        """, (user_id, trial_start.isoformat(), trial_end.isoformat()))
+        await db.commit()
+
+    # Issue JWT session
+    token = create_access_token(
+        data={"sub": str(user_id), "type": "user", "email": google_email},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    response = RedirectResponse("/dashboard", status_code=302)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax"
+    )
+    # Clear oauth cookies
+    response.delete_cookie("oauth_state")
+    response.delete_cookie("oauth_lang")
+    return response
 
 
 # ─── Logout ───────────────────────────────────────────────────

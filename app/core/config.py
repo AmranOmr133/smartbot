@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # AI
     GEMINI_API_KEY: Optional[str] = None
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+
     # Payment
     PAYMENT_WHATSAPP: str = "+967 778420154"
     PAYMENT_EMAIL: str = "tamayozsoft.info@gmail.com"

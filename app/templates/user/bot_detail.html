@@ -3,12 +3,20 @@
 {% block page_title %}{{ bot.name }}{% endblock %}
 {% block page_sub %}إدارة وإعداد البوت{% endblock %}
 {% block topbar_actions %}
-<button class="btn btn-sm btn-ghost" onclick="document.getElementById('editSettingsModal').classList.add('show')">⚙️ الإعدادات</button>
+<button class="btn btn-sm btn-ghost" onclick="document.getElementById('editSettingsModal').classList.add('show')">
+    <span class="material-symbols-outlined" style="font-size:16px;">settings</span> الإعدادات
+</button>
 <button class="btn btn-sm {% if bot.is_active %}btn-danger{% else %}btn-success{% endif %}"
         id="toggle-btn" onclick="toggleBot()">
-    {% if bot.is_active %}⏸ إيقاف{% else %}▶️ تشغيل{% endif %}
+    {% if bot.is_active %}
+    <span class="material-symbols-outlined" style="font-size:16px;">pause</span> إيقاف
+    {% else %}
+    <span class="material-symbols-outlined" style="font-size:16px;">play_arrow</span> تشغيل
+    {% endif %}
 </button>
-<button class="btn btn-sm btn-danger" onclick="deleteBot()">🗑️ حذف</button>
+<button class="btn btn-sm btn-danger" onclick="deleteBot()">
+    <span class="material-symbols-outlined" style="font-size:16px;">delete</span> حذف
+</button>
 {% endblock %}
 
 {% block content %}

@@ -6,6 +6,7 @@
     <title>{% block title %}SmartBot{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -126,6 +127,23 @@
         }
 
         .nav-link .icon { font-size: 18px; flex-shrink: 0; }
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
 
         /* Sub status card */
         .sub-status-card {
@@ -438,26 +456,26 @@
         <nav class="nav">
             <div class="nav-group-label">الرئيسية</div>
             <a href="/dashboard" class="nav-link {% if page == 'dashboard' %}active{% endif %}">
-                <span class="icon">🏠</span> لوحة التحكم
+                <span class="material-symbols-outlined" style="color:var(--blue);">dashboard</span> لوحة التحكم
             </a>
 
             <div class="nav-group-label">البوتات</div>
             <a href="/bots" class="nav-link {% if page == 'bots' %}active{% endif %}">
-                <span class="icon">🤖</span> بوتاتي
+                <span class="material-symbols-outlined" style="color:var(--blue);">smart_toy</span> بوتاتي
             </a>
 
             <div class="nav-group-label">الحساب</div>
             <a href="/subscription" class="nav-link {% if page == 'subscription' %}active{% endif %}">
-                <span class="icon">🎫</span> اشتراكي
+                <span class="material-symbols-outlined" style="color:var(--blue);">loyalty</span> اشتراكي
             </a>
         </nav>
 
         {% if sub_info is defined %}
         <div class="sub-status-card {{ sub_info.status }}">
             <div class="sub-status-title">
-                {% if sub_info.status == 'trial' %}🔮 تجربة مجانية
-                {% elif sub_info.status == 'active' %}✅ اشتراك نشط
-                {% else %}❌ منتهي الصلاحية{% endif %}
+                {% if sub_info.status == 'trial' %}<span class="material-symbols-outlined" style="font-size:16px;">stars</span> تجربة مجانية
+                {% elif sub_info.status == 'active' %}<span class="material-symbols-outlined" style="font-size:16px;">verified</span> اشتراك نشط
+                {% else %}<span class="material-symbols-outlined" style="font-size:16px;">cancel</span> منتهي الصلاحية{% endif %}
             </div>
             <div class="sub-status-days">
                 {% if sub_info.days_left > 0 %}متبقي {{ sub_info.days_left }} يوم{% else %}قم بالتجديد{% endif %}
@@ -475,7 +493,9 @@
                     <div class="user-email">{{ user.email if user else '' }}</div>
                 </div>
             </div>
-            <a href="/logout" class="btn-logout-small">🚪 تسجيل الخروج</a>
+            <a href="/logout" class="btn-logout-small">
+                <span class="material-symbols-outlined" style="font-size:18px;">logout</span> تسجيل الخروج
+            </a>
         </div>
     </aside>
 
