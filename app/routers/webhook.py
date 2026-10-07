@@ -1,7 +1,6 @@
 """
 Telegram Webhook Handler
 """
-from PIL.Image import logger
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
 import aiosqlite
