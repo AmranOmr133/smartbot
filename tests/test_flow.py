@@ -71,7 +71,7 @@ async def test_user_flow_and_subscription():
             "token": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
             "welcome_message": "مرحباً بك!",
             "system_prompt": "أنت مساعد ذكي ومفيد.",
-            "ai_model": "gemini-1.5-flash",
+            "ai_model": "gemini-3.8-flash",
             "ai_enabled": "1"
         }, cookies=user_cookies, follow_redirects=False)
         assert r.status_code in (200, 302)

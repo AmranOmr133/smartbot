@@ -187,7 +187,7 @@ async def run_all_tests():
             "token": f"demo_{uuid.uuid4().hex[:12]}:token",
             "welcome_message": "أهلاً بك، كيف يمكنني خدمتك اليوم؟",
             "system_prompt": "أنت موظف خدمة عملاء محترف ودود.",
-            "ai_model": "gemini-1.5-flash",
+            "ai_model": "gemini-3.8-flash",
             "ai_enabled": "1"
         }, cookies=user_cookies, follow_redirects=False)
         assert r.status_code in (200, 302)
