@@ -3,7 +3,6 @@ User Bots Router - CRUD for Telegram bots
 """
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 import aiosqlite
 import httpx
 import json
@@ -11,9 +10,9 @@ import json
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.core.config import settings
+from app.core.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 def require_user(request: Request):
@@ -65,13 +64,17 @@ async def user_bots(request: Request, db: aiosqlite.Connection = Depends(get_db)
 
     has_sub = await check_subscription(user_id, db)
 
-    return templates.TemplateResponse("user/bots.html", {
-        "request": request,
-        "user": user,
-        "bots": bots,
-        "has_subscription": has_sub,
-        "page": "bots"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="user/bots.html",
+        context={
+            "request": request,
+            "user": user,
+            "bots": bots,
+            "has_subscription": has_sub,
+            "page": "bots"
+        }
+    )
 
 
 @router.get("/bots/new", response_class=HTMLResponse)
@@ -88,11 +91,15 @@ async def new_bot_page(request: Request, db: aiosqlite.Connection = Depends(get_
     async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as c:
         user = dict(await c.fetchone())
 
-    return templates.TemplateResponse("user/bot_new.html", {
-        "request": request,
-        "user": user,
-        "page": "bots"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="user/bot_new.html",
+        context={
+            "request": request,
+            "user": user,
+            "page": "bots"
+        }
+    )
 
 
 @router.post("/bots/new")
@@ -121,13 +128,18 @@ async def create_bot(
     if existing_bot:
         async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as c:
             user = dict(await c.fetchone())
-        return templates.TemplateResponse("user/bot_new.html", {
-            "request": request,
-            "user": user,
-            "error": "⚠️ يُسمح بإنشاء بوت واحد فقط لكل مستخدم. يمكنك تعديل إعدادات بوتك الحالي من صفحة البوتات.",
-            "page": "bots",
-            "has_bot_already": True,
-        }, status_code=400)
+        return templates.TemplateResponse(
+            request=request,
+            name="user/bot_new.html",
+            context={
+                "request": request,
+                "user": user,
+                "error": "⚠️ يُسمح بإنشاء بوت واحد فقط لكل مستخدم. يمكنك تعديل إعدادات بوتك الحالي من صفحة البوتات.",
+                "page": "bots",
+                "has_bot_already": True,
+            },
+            status_code=400
+        )
     # ─────────────────────────────────────────────────────
 
     # Validate Telegram token
@@ -142,22 +154,32 @@ async def create_bot(
                 if not data.get("ok"):
                     async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as c:
                         user = dict(await c.fetchone())
-                    return templates.TemplateResponse("user/bot_new.html", {
-                        "request": request,
-                        "user": user,
-                        "error": "توكن التليغرام غير صالح. تحقق من التوكن وأعد المحاولة.",
-                        "page": "bots"
-                    }, status_code=400)
+                    return templates.TemplateResponse(
+                        request=request,
+                        name="user/bot_new.html",
+                        context={
+                            "request": request,
+                            "user": user,
+                            "error": "توكن التليغرام غير صالح. تحقق من التوكن وأعد المحاولة.",
+                            "page": "bots"
+                        },
+                        status_code=400
+                    )
                 bot_info = data["result"]
             except Exception:
                 async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as c:
                     user = dict(await c.fetchone())
-                return templates.TemplateResponse("user/bot_new.html", {
-                    "request": request,
-                    "user": user,
-                    "error": "تعذر الاتصال بـ Telegram API. تحقق من الاتصال.",
-                    "page": "bots"
-                }, status_code=400)
+                return templates.TemplateResponse(
+                    request=request,
+                    name="user/bot_new.html",
+                    context={
+                        "request": request,
+                        "user": user,
+                        "error": "تعذر الاتصال بـ Telegram API. تحقق من الاتصال.",
+                        "page": "bots"
+                    },
+                    status_code=400
+                )
 
     # Check token not already used
     async with db.execute("SELECT id FROM bots WHERE token = ?", (token,)) as c:
@@ -165,12 +187,17 @@ async def create_bot(
     if existing:
         async with db.execute("SELECT * FROM users WHERE id = ?", (user_id,)) as c:
             user = dict(await c.fetchone())
-        return templates.TemplateResponse("user/bot_new.html", {
-            "request": request,
-            "user": user,
-            "error": "هذا التوكن مستخدم بالفعل.",
-            "page": "bots"
-        }, status_code=400)
+        return templates.TemplateResponse(
+            request=request,
+            name="user/bot_new.html",
+            context={
+                "request": request,
+                "user": user,
+                "error": "هذا التوكن مستخدم بالفعل.",
+                "page": "bots"
+            },
+            status_code=400
+        )
 
     bot_name = name or bot_info.get("first_name", "My Bot")
     await db.execute("""
@@ -207,14 +234,18 @@ async def bot_detail(bot_id: int, request: Request, db: aiosqlite.Connection = D
     ) as c:
         conversations = [dict(r) for r in await c.fetchall()]
 
-    return templates.TemplateResponse("user/bot_detail.html", {
-        "request": request,
-        "user": user,
-        "bot": bot,
-        "knowledge": knowledge,
-        "conversations": conversations,
-        "page": "bots"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="user/bot_detail.html",
+        context={
+            "request": request,
+            "user": user,
+            "bot": bot,
+            "knowledge": knowledge,
+            "conversations": conversations,
+            "page": "bots"
+        }
+    )
 
 
 @router.post("/bots/{bot_id}/toggle")

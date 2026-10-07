@@ -5,16 +5,15 @@ import os
 import uuid
 from fastapi import APIRouter, Depends, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from datetime import datetime
 import aiosqlite
 
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.core.config import settings
+from app.core.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 RECEIPTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
@@ -71,18 +70,22 @@ async def subscription_page(request: Request, db: aiosqlite.Connection = Depends
         else:
             sub_info = {"status": "expired", "days_left": 0}
 
-    return templates.TemplateResponse("user/subscription.html", {
-        "request": request,
-        "user": user,
-        "subscription": sub,
-        "sub_info": sub_info,
-        "pending_payment": pending_payment,
-        "payment_methods": settings.PAYMENT_METHODS.split(","),
-        "payment_amount": settings.SUBSCRIPTION_PRICE_SAR,
-        "payment_whatsapp": settings.PAYMENT_WHATSAPP,
-        "payment_email": settings.PAYMENT_EMAIL,
-        "page": "subscription"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="user/subscription.html",
+        context={
+            "request": request,
+            "user": user,
+            "subscription": sub,
+            "sub_info": sub_info,
+            "pending_payment": pending_payment,
+            "payment_methods": settings.PAYMENT_METHODS.split(","),
+            "payment_amount": settings.SUBSCRIPTION_PRICE_SAR,
+            "payment_whatsapp": settings.PAYMENT_WHATSAPP,
+            "payment_email": settings.PAYMENT_EMAIL,
+            "page": "subscription"
+        }
+    )
 
 
 @router.post("/subscription/pay")

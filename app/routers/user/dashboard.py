@@ -3,15 +3,14 @@ User Dashboard Router
 """
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from datetime import datetime
 import aiosqlite
 
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 def require_user(request: Request):
@@ -97,13 +96,17 @@ async def user_dashboard(request: Request, db: aiosqlite.Connection = Depends(ge
     """, (user_id,)) as c:
         recent_conversations = [dict(r) for r in await c.fetchall()]
 
-    return templates.TemplateResponse("user/dashboard.html", {
-        "request": request,
-        "user": user,
-        "subscription": sub,
-        "sub_info": sub_info,
-        "bots": bots,
-        "total_messages": total_messages,
-        "recent_conversations": recent_conversations,
-        "page": "dashboard"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="user/dashboard.html",
+        context={
+            "request": request,
+            "user": user,
+            "subscription": sub,
+            "sub_info": sub_info,
+            "bots": bots,
+            "total_messages": total_messages,
+            "recent_conversations": recent_conversations,
+            "page": "dashboard"
+        }
+    )

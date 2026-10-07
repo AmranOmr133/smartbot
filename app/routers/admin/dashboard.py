@@ -3,15 +3,14 @@ Admin Dashboard & Main Pages Router — Full Admin Control
 """
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
 import aiosqlite
 
 from app.core.database import get_db
 from app.core.security import decode_token, hash_password
+from app.core.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 def require_admin(request: Request):
@@ -63,23 +62,27 @@ async def admin_dashboard(request: Request, db: aiosqlite.Connection = Depends(g
     ) as cursor:
         recent_payments = [dict(r) for r in await cursor.fetchall()]
 
-    return templates.TemplateResponse("admin/dashboard.html", {
-        "request": request,
-        "admin": admin,
-        "stats": {
-            "total_users": total_users,
-            "new_users_today": new_users_today,
-            "active_bots": active_bots,
-            "active_subs": active_subs,
-            "pending_payments": pending_payments,
-            "total_revenue": total_revenue,
-            "total_conversations": total_conversations,
-        },
-        "recent_users": recent_users,
-        "recent_payments": recent_payments,
-        "maintenance_mode": maintenance_mode,
-        "page": "dashboard"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/dashboard.html",
+        context={
+            "request": request,
+            "admin": admin,
+            "stats": {
+                "total_users": total_users,
+                "new_users_today": new_users_today,
+                "active_bots": active_bots,
+                "active_subs": active_subs,
+                "pending_payments": pending_payments,
+                "total_revenue": total_revenue,
+                "total_conversations": total_conversations,
+            },
+            "recent_users": recent_users,
+            "recent_payments": recent_payments,
+            "maintenance_mode": maintenance_mode,
+            "page": "dashboard"
+        }
+    )
 
 
 # ── Users List ────────────────────────────────────────────────
@@ -116,14 +119,18 @@ async def admin_users(request: Request, search: str = "", db: aiosqlite.Connecti
     async with db.execute("SELECT COUNT(*) as cnt FROM payment_requests WHERE status = 'pending'") as c:
         pending_payments = (await c.fetchone())["cnt"]
 
-    return templates.TemplateResponse("admin/users.html", {
-        "request": request,
-        "admin": admin,
-        "users": users,
-        "search": search,
-        "stats": {"pending_payments": pending_payments},
-        "page": "users"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/users.html",
+        context={
+            "request": request,
+            "admin": admin,
+            "users": users,
+            "search": search,
+            "stats": {"pending_payments": pending_payments},
+            "page": "users"
+        }
+    )
 
 
 # ── User Detail ───────────────────────────────────────────────
@@ -154,16 +161,20 @@ async def admin_user_detail(user_id: int, request: Request, db: aiosqlite.Connec
     async with db.execute("SELECT COUNT(*) as cnt FROM payment_requests WHERE status = 'pending'") as c:
         pending_payments = (await c.fetchone())["cnt"]
 
-    return templates.TemplateResponse("admin/user_detail.html", {
-        "request": request,
-        "admin": admin,
-        "target_user": user,
-        "subscription": sub,
-        "bots": bots,
-        "payments": payments,
-        "stats": {"pending_payments": pending_payments},
-        "page": "users"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/user_detail.html",
+        context={
+            "request": request,
+            "admin": admin,
+            "target_user": user,
+            "subscription": sub,
+            "bots": bots,
+            "payments": payments,
+            "stats": {"pending_payments": pending_payments},
+            "page": "users"
+        }
+    )
 
 
 # ── Toggle User Status ────────────────────────────────────────
@@ -314,13 +325,17 @@ async def admin_bots(request: Request, db: aiosqlite.Connection = Depends(get_db
     async with db.execute("SELECT COUNT(*) as cnt FROM payment_requests WHERE status = 'pending'") as c:
         pending_payments = (await c.fetchone())["cnt"]
 
-    return templates.TemplateResponse("admin/bots.html", {
-        "request": request,
-        "admin": admin,
-        "bots": bots,
-        "stats": {"pending_payments": pending_payments},
-        "page": "bots"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/bots.html",
+        context={
+            "request": request,
+            "admin": admin,
+            "bots": bots,
+            "stats": {"pending_payments": pending_payments},
+            "page": "bots"
+        }
+    )
 
 
 # ── Admin Toggle Bot ──────────────────────────────────────────
@@ -370,13 +385,17 @@ async def admin_subscriptions(request: Request, db: aiosqlite.Connection = Depen
     async with db.execute("SELECT COUNT(*) as cnt FROM payment_requests WHERE status = 'pending'") as c:
         pending_payments = (await c.fetchone())["cnt"]
 
-    return templates.TemplateResponse("admin/subscriptions.html", {
-        "request": request,
-        "admin": admin,
-        "subscriptions": subscriptions,
-        "stats": {"pending_payments": pending_payments},
-        "page": "subscriptions"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/subscriptions.html",
+        context={
+            "request": request,
+            "admin": admin,
+            "subscriptions": subscriptions,
+            "stats": {"pending_payments": pending_payments},
+            "page": "subscriptions"
+        }
+    )
 
 
 # ── Payments List ─────────────────────────────────────────────
@@ -405,18 +424,22 @@ async def admin_payments(request: Request, db: aiosqlite.Connection = Depends(ge
     async with db.execute("SELECT COALESCE(SUM(amount), 0) as total FROM payment_requests WHERE status = 'approved'") as c:
         total_revenue = (await c.fetchone())["total"]
 
-    return templates.TemplateResponse("admin/payments.html", {
-        "request": request,
-        "admin": admin,
-        "payments": payments,
-        "stats": {
-            "pending_payments": pending_payments,
-            "approved_payments": approved_payments,
-            "rejected_payments": rejected_payments,
-            "total_revenue": total_revenue,
-        },
-        "page": "payments"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/payments.html",
+        context={
+            "request": request,
+            "admin": admin,
+            "payments": payments,
+            "stats": {
+                "pending_payments": pending_payments,
+                "approved_payments": approved_payments,
+                "rejected_payments": rejected_payments,
+                "total_revenue": total_revenue,
+            },
+            "page": "payments"
+        }
+    )
 
 
 # ── Payment Details API ───────────────────────────────────────

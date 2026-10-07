@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS bots (
     webhook_url TEXT,
     is_active INTEGER DEFAULT 0,
     ai_enabled INTEGER DEFAULT 1,
-    ai_model TEXT DEFAULT 'gemini-1.5-flash',
+    ai_model TEXT DEFAULT 'gemini-3.8-flash',
     system_prompt TEXT,
     welcome_message TEXT,
     language TEXT DEFAULT 'ar',

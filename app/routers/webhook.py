@@ -1,6 +1,7 @@
 """
 Telegram Webhook Handler
 """
+from PIL.Image import logger
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
 import aiosqlite
@@ -20,7 +21,7 @@ async def get_ai_response(bot: dict, user_message: str, chat_history: list, know
     try:
         import google.generativeai as genai
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel(bot.get("ai_model", "gemini-1.5-flash"))
+        model = genai.GenerativeModel(bot.get("ai_model", "gemini-3.8-flash"))
 
         # Build context
         system = bot.get("system_prompt") or "أنت مساعد ذكي ومفيد. أجب باللغة العربية."
